@@ -44,6 +44,7 @@ export default function Layout({ children }) {
         });
         setNotifications(notifs);
       } catch (e) {
+        console.error("Error fetching user:", e);
         // Not logged in
       }
     };
@@ -63,7 +64,7 @@ export default function Layout({ children }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-slate-900">
+    <div className="min-h-screen bg-gray-50 font-sans text-slate-900 notranslate" translate="no">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
