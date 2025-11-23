@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Search, FilterX, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Search, FilterX, SlidersHorizontal, Car } from 'lucide-react';
 import VehicleCard from '../components/vehicle/VehicleCard';
 import { STATES, formatCurrency } from '../components/shared/utils';
 import {
