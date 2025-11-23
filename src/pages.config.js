@@ -3,6 +3,8 @@ import Advertise from './pages/Advertise';
 import VehicleDetails from './pages/VehicleDetails';
 import MyAds from './pages/MyAds';
 import EditVehicle from './pages/EditVehicle';
+import Favorites from './pages/Favorites';
+import Chat from './pages/Chat';
 import __Layout from './Layout.jsx';
 
 
@@ -12,6 +14,8 @@ export const PAGES = {
     "VehicleDetails": VehicleDetails,
     "MyAds": MyAds,
     "EditVehicle": EditVehicle,
+    "Favorites": Favorites,
+    "Chat": Chat,
 }
 
 export const pagesConfig = {
