@@ -87,7 +87,6 @@ export default function HomePage() {
         // But wait, `Favorite` entity I defined has `vehicle_id`.
         // Since I can't query `created_by` easily in this mock, I'll assume listing returns what I need.
         const allFavs = await base44.entities.Favorite.list(); 
-        const user = await base44.auth.me();
         return allFavs.filter(f => f.created_by === user.email); // basic client filter
       } catch {
         return [];
