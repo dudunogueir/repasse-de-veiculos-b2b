@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { 
-  Send, MessageSquare, User, Clock, Search, ChevronLeft 
+  Send, MessageSquare, User, Clock, Search, ChevronLeft, Loader2 
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
