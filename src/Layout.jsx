@@ -141,9 +141,18 @@ export default function Layout({ children }) {
                     <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                     <DropdownMenuItem className="text-xs text-gray-500">{user.email}</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <User className="mr-2 h-4 w-4" /> Perfil
+                    <DropdownMenuItem asChild>
+                      <Link to={createPageUrl('Profile')} className="cursor-pointer w-full flex items-center">
+                        <User className="mr-2 h-4 w-4" /> Perfil
+                      </Link>
                     </DropdownMenuItem>
+                    {user.role === 'admin' && (
+                      <DropdownMenuItem asChild>
+                        <Link to={createPageUrl('Admin')} className="cursor-pointer w-full flex items-center">
+                          <LayoutDashboard className="mr-2 h-4 w-4" /> Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                       <LogOut className="mr-2 h-4 w-4" /> Sair
                     </DropdownMenuItem>

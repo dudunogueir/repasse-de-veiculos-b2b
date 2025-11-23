@@ -6,6 +6,7 @@ import EditVehicle from './pages/EditVehicle';
 import Favorites from './pages/Favorites';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
+import Admin from './pages/Admin';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "Favorites": Favorites,
     "Chat": Chat,
     "Profile": Profile,
+    "Admin": Admin,
 }
 
 export const pagesConfig = {
