@@ -5,6 +5,7 @@ import MyAds from './pages/MyAds';
 import EditVehicle from './pages/EditVehicle';
 import Favorites from './pages/Favorites';
 import Chat from './pages/Chat';
+import Profile from './pages/Profile';
 import __Layout from './Layout.jsx';
 
 
@@ -16,6 +17,7 @@ export const PAGES = {
     "EditVehicle": EditVehicle,
     "Favorites": Favorites,
     "Chat": Chat,
+    "Profile": Profile,
 }
 
 export const pagesConfig = {
