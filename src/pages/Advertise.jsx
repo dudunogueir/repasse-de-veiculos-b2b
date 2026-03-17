@@ -110,7 +110,10 @@ export default function AdvertisePage() {
         mileage: vehicleToEdit.mileage || vehicleToEdit.km || '',
         state: vehicleToEdit.state,
         city: vehicleToEdit.city || '',
-        status: vehicleToEdit.status || 'active'
+        status: vehicleToEdit.status || 'active',
+        transmission: vehicleToEdit.transmission || '',
+        phone: vehicleToEdit.phone || '',
+        description: vehicleToEdit.description || ''
       });
       
       setIsFeatured(vehicleToEdit.is_featured || false);
