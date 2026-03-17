@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
         const priceRes = await fetch(`https://parallelum.com.br/fipe/api/v1/carros/marcas/${marca.codigo}/modelos/${bestMatch.codigo}/anos/${anoMatch.codigo}`);
         const priceData = await priceRes.json();
         
-        const numericPrice = parseFloat(priceData.Valor.replace('R$ ', '').replace('.', '').replace(',', '.'));
+        const numericPrice = parseFloat(priceData.Valor.replace('R$ ', '').replaceAll('.', '').replace(',', '.'));
         
         return Response.json({ 
             fipe_price: numericPrice,
