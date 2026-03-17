@@ -251,7 +251,7 @@ export default function HomePage() {
                     isFavorite={favorites?.some(f => f.vehicle_id === vehicle.id)}
                     onToggleFavorite={handleToggleFavorite}
                   />
-                ))}
+                ))} 
               </div>
             )}
           </div>
