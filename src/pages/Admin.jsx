@@ -300,7 +300,8 @@ export default function AdminPage() {
                     <TableHead>Usuário</TableHead>
                     <TableHead>Plano Atual</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Alterar Plano</TableHead>
+                    <TableHead>Validade</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -313,7 +314,10 @@ export default function AdminPage() {
                           {sub.status}
                         </span>
                       </TableCell>
-                      <TableCell className="space-x-2">
+                      <TableCell className="text-sm text-gray-500">
+                        {sub.expires_at ? new Date(sub.expires_at).toLocaleDateString('pt-BR') : 'Indeterminado'}
+                      </TableCell>
+                      <TableCell className="space-x-2 flex items-center">
                         <select 
                           className="h-8 rounded border px-2 text-xs"
                           value={sub.plan}
@@ -323,6 +327,15 @@ export default function AdminPage() {
                           <option value="starter">Starter</option>
                           <option value="pro">Pro</option>
                           <option value="enterprise">Enterprise</option>
+                        </select>
+                        <select 
+                          className="h-8 rounded border px-2 text-xs"
+                          value={sub.status}
+                          onChange={(e) => updateSubMutation.mutate({ id: sub.id, status: e.target.value })}
+                        >
+                          <option value="active">Ativo</option>
+                          <option value="expired">Expirado</option>
+                          <option value="cancelled">Cancelado</option>
                         </select>
                       </TableCell>
                     </TableRow>
