@@ -10,13 +10,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import { motion, AnimatePresence } from 'framer-motion'; // Adicionado para animações nativas
-import NotificationsPage from './pages/Notifications';
-import DashboardPage from './pages/Dashboard';
-import ProposalsPage from './pages/Proposals';
-import AlertPreferencesPage from './pages/AlertPreferences';
-import PlansPage from './pages/Plans';
-import AdvertisePage from './pages/Advertise';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -26,13 +20,12 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
-// Componente para criar o efeito de "Slide" nativo do iOS
 const PageTransition = ({ children }) => (
   <motion.div
-    initial={{ opacity: 0, x: 10 }} // Começa levemente deslocado à direita
-    animate={{ opacity: 1, x: 0 }}  // Desliza para o centro
-    exit={{ opacity: 0, x: -10 }}   // Sai para a esquerda
-    transition={{ duration: 0.2, ease: "easeInOut" }} // Transição rápida e fluida
+    initial={{ opacity: 0, x: 10 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: -10 }}
+    transition={{ duration: 0.2, ease: "easeInOut" }}
   >
     {children}
   </motion.div>
@@ -40,7 +33,7 @@ const PageTransition = ({ children }) => (
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-  const location = useLocation(); // Necessário para rastrear a troca de páginas
+  const location = useLocation();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -58,84 +51,37 @@ const AuthenticatedApp = () => {
     }
   }
 
+  const AdvertisePage = Pages['Advertise'];
+
   return (
-    <AnimatePresence mode="wait"> {/* Gerencia a entrada e saída das telas */}
+    <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={
           <LayoutWrapper currentPageName={mainPageKey}>
             <PageTransition><MainPage /></PageTransition>
           </LayoutWrapper>
         } />
+        {AdvertisePage && (
+          <Route
+            path="/Advertise/:id"
+            element={
+              <LayoutWrapper currentPageName="Advertise">
+                <PageTransition><AdvertisePage /></PageTransition>
+              </LayoutWrapper>
+            }
+          />
+        )}
         {Object.entries(Pages).map(([path, Page]) => (
-          path !== 'Advertise' && (
-            <Route
-              key={path}
-              path={`/${path}`}
-              element={
-                <LayoutWrapper currentPageName={path}>
-                  <PageTransition><Page /></PageTransition>
-                </LayoutWrapper>
-              }
-            />
-          )
+          <Route
+            key={path}
+            path={`/${path}`}
+            element={
+              <LayoutWrapper currentPageName={path}>
+                <PageTransition><Page /></PageTransition>
+              </LayoutWrapper>
+            }
+          />
         ))}
-
-        <Route 
-          path="/Advertise" 
-          element={
-            <LayoutWrapper currentPageName="Advertise">
-              <PageTransition><AdvertisePage /></PageTransition>
-            </LayoutWrapper>
-          } 
-        />
-        <Route 
-          path="/Advertise/:id" 
-          element={
-            <LayoutWrapper currentPageName="Advertise">
-              <PageTransition><AdvertisePage /></PageTransition>
-            </LayoutWrapper>
-          } 
-        />
-        <Route 
-          path="/Notifications" 
-          element={
-            <LayoutWrapper currentPageName="Notifications">
-              <PageTransition><NotificationsPage /></PageTransition>
-            </LayoutWrapper>
-          } 
-        />
-        <Route 
-          path="/Dashboard" 
-          element={
-            <LayoutWrapper currentPageName="Dashboard">
-              <PageTransition><DashboardPage /></PageTransition>
-            </LayoutWrapper>
-          } 
-        />
-        <Route 
-          path="/Proposals" 
-          element={
-            <LayoutWrapper currentPageName="Proposals">
-              <PageTransition><ProposalsPage /></PageTransition>
-            </LayoutWrapper>
-          } 
-        />
-        <Route 
-          path="/AlertPreferences" 
-          element={
-            <LayoutWrapper currentPageName="AlertPreferences">
-              <PageTransition><AlertPreferencesPage /></PageTransition>
-            </LayoutWrapper>
-          } 
-        />
-        <Route 
-          path="/Plans" 
-          element={
-            <LayoutWrapper currentPageName="Plans">
-              <PageTransition><PlansPage /></PageTransition>
-            </LayoutWrapper>
-          } 
-        />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </AnimatePresence>
