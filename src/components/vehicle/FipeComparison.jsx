@@ -91,7 +91,7 @@ export default function FipeComparison({ vehicle }) {
     try {
       const res = await fetch(`https://parallelum.com.br/fipe/api/v1/carros/marcas/${selMarca}/modelos/${selModelo}/anos/${selAno}`);
       const data = await res.json();
-      const numericPrice = parseFloat(data.Valor.replace('R$ ', '').replace('.', '').replace(',', '.'));
+      const numericPrice = parseFloat(data.Valor.replace('R$ ', '').replaceAll('.', '').replace(',', '.'));
       
       const newFipeData = {
         fipe_price: numericPrice,
