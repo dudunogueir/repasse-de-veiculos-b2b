@@ -67,22 +67,32 @@ const AuthenticatedApp = () => {
           </LayoutWrapper>
         } />
         {Object.entries(Pages).map(([path, Page]) => (
-          <Route
-            key={path}
-            path={`/${path}`}
-            element={
-              <LayoutWrapper currentPageName={path}>
-                <PageTransition><Page /></PageTransition>
-              </LayoutWrapper>
-            }
-          />
+          path !== 'Advertise' && (
+            <Route
+              key={path}
+              path={`/${path}`}
+              element={
+                <LayoutWrapper currentPageName={path}>
+                  <PageTransition><Page /></PageTransition>
+                </LayoutWrapper>
+              }
+            />
+          )
         ))}
 
+        <Route 
+          path="/Advertise" 
+          element={
+            <LayoutWrapper currentPageName="Advertise">
+              <PageTransition><AdvertisePage /></PageTransition>
+            </LayoutWrapper>
+          } 
+        />
         <Route 
           path="/Advertise/:id" 
           element={
             <LayoutWrapper currentPageName="Advertise">
-              <PageTransition><Pages.Advertise /></PageTransition>
+              <PageTransition><AdvertisePage /></PageTransition>
             </LayoutWrapper>
           } 
         />
