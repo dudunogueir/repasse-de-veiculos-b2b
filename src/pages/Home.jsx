@@ -46,16 +46,27 @@ export default function HomePage() {
         if (sellerQuery && v.created_by !== sellerQuery) return false;
         
         // Filtros Normais
-        if (debouncedFilters.make && !v.make.toLowerCase().includes(debouncedFilters.make.toLowerCase())) return false;
-        if (debouncedFilters.model && !v.model.toLowerCase().includes(debouncedFilters.model.toLowerCase())) return false;
+        if (debouncedFilters.search) {
+          const searchLower = debouncedFilters.search.toLowerCase();
+          const matchMake = v.make?.toLowerCase().includes(searchLower);
+          const matchModel = v.model?.toLowerCase().includes(searchLower);
+          const matchVersion = v.version?.toLowerCase().includes(searchLower);
+          if (!matchMake && !matchModel && !matchVersion) return false;
+        }
+        if (debouncedFilters.make !== 'all' && debouncedFilters.make && v.make !== debouncedFilters.make) return false;
         if (debouncedFilters.state !== 'all' && v.state !== debouncedFilters.state) return false;
+        if (debouncedFilters.transmission !== 'all' && debouncedFilters.transmission && v.transmission !== debouncedFilters.transmission) return false;
         if (debouncedFilters.minPrice && v.price < parseInt(debouncedFilters.minPrice)) return false;
         if (debouncedFilters.maxPrice && v.price > parseInt(debouncedFilters.maxPrice)) return false;
+        if (debouncedFilters.minYear && v.manufacturing_year < parseInt(debouncedFilters.minYear)) return false;
+        if (debouncedFilters.maxYear && v.manufacturing_year > parseInt(debouncedFilters.maxYear)) return false;
+        if (debouncedFilters.maxKm && v.mileage > parseInt(debouncedFilters.maxKm)) return false;
         return true;
       }).sort((a, b) => {
         if (debouncedFilters.sort === 'recent') return new Date(b.created_date) - new Date(a.created_date);
         if (debouncedFilters.sort === 'price_asc') return a.price - b.price;
         if (debouncedFilters.sort === 'price_desc') return b.price - a.price;
+        if (debouncedFilters.sort === 'km_asc') return (a.mileage || 0) - (b.mileage || 0);
         return 0;
       });
     }
@@ -100,6 +111,7 @@ export default function HomePage() {
     { label: 'Mais Recentes', value: 'recent' },
     { label: 'Menor Preço', value: 'price_asc' },
     { label: 'Maior Preço', value: 'price_desc' },
+    { label: 'Menor KM', value: 'km_asc' },
   ];
 
   return (
@@ -146,20 +158,52 @@ export default function HomePage() {
               <DrawerHeader>
                 <DrawerTitle>Filtros Avançados</DrawerTitle>
               </DrawerHeader>
-              <div className="space-y-6 py-4">
+              <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto">
+                <div className="space-y-1.5">
+                   <label className="text-xs font-bold text-muted-foreground uppercase">Marca</label>
+                   <select 
+                     className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary"
+                     value={homeFilters.make}
+                     onChange={(e) => setHomeFilters({ make: e.target.value })}
+                   >
+                     <option value="all">Todas as Marcas</option>
+                     {["Chevrolet", "Volkswagen", "Fiat", "Toyota", "Hyundai", "Jeep", "Renault", "Honda", "Nissan", "Ford", "BMW", "Audi"].map(m => (
+                       <option key={m} value={m}>{m}</option>
+                     ))}
+                   </select>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-muted-foreground uppercase">Mínimo</label>
+                      <label className="text-xs font-bold text-muted-foreground uppercase">Preço Mín</label>
                       <Input type="number" placeholder="R$ 0" value={homeFilters.minPrice} onChange={(e) => setHomeFilters({ minPrice: e.target.value })} />
                    </div>
                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-muted-foreground uppercase">Máximo</label>
+                      <label className="text-xs font-bold text-muted-foreground uppercase">Preço Máx</label>
                       <Input type="number" placeholder="R$ 1M" value={homeFilters.maxPrice} onChange={(e) => setHomeFilters({ maxPrice: e.target.value })} />
+                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                   <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-muted-foreground uppercase">Ano Mín</label>
+                      <Input type="number" placeholder="Ex: 2015" value={homeFilters.minYear} onChange={(e) => setHomeFilters({ minYear: e.target.value })} />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-muted-foreground uppercase">KM Máx</label>
+                      <Input type="number" placeholder="Ex: 100000" value={homeFilters.maxKm} onChange={(e) => setHomeFilters({ maxKm: e.target.value })} />
+                   </div>
+                </div>
+                <div className="space-y-1.5">
+                   <label className="text-xs font-bold text-muted-foreground uppercase">Câmbio</label>
+                   <div className="grid grid-cols-3 gap-2">
+                      <Button variant={homeFilters.transmission === 'all' ? "default" : "outline"} size="sm" onClick={() => setHomeFilters({ transmission: 'all' })}>Todos</Button>
+                      <Button variant={homeFilters.transmission === 'Automático' ? "default" : "outline"} size="sm" onClick={() => setHomeFilters({ transmission: 'Automático' })}>Auto</Button>
+                      <Button variant={homeFilters.transmission === 'Manual' ? "default" : "outline"} size="sm" onClick={() => setHomeFilters({ transmission: 'Manual' })}>Manual</Button>
                    </div>
                 </div>
                 <div className="space-y-1.5">
                    <label className="text-xs font-bold text-muted-foreground uppercase">Estado (UF)</label>
                    <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1">
+                      <Button variant={homeFilters.state === 'all' ? "default" : "outline"} size="sm" onClick={() => setHomeFilters({ state: 'all' })}>Todos</Button>
                       {STATES.map(uf => (
                         <Button key={uf} variant={homeFilters.state === uf ? "default" : "outline"} size="sm" onClick={() => setHomeFilters({ state: uf })}>
                           {uf}
@@ -205,15 +249,21 @@ export default function HomePage() {
         <div className="hidden md:grid grid-cols-12 gap-3 bg-card p-4 rounded-xl border border-border shadow-sm">
           <div className="col-span-4 relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Marca ou modelo..." className="pl-9 h-10" value={homeFilters.make} onChange={(e) => setHomeFilters({ make: e.target.value })} />
+            <Input placeholder="Marca, modelo ou versão..." className="pl-9 h-10" value={homeFilters.search} onChange={(e) => setHomeFilters({ search: e.target.value })} />
           </div>
-          <div className="col-span-3">
+          <div className="col-span-2">
+            <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary" value={homeFilters.make} onChange={(e) => setHomeFilters({ make: e.target.value })}>
+              <option value="all">Todas Marcas</option>
+              {["Chevrolet", "Volkswagen", "Fiat", "Toyota", "Hyundai", "Jeep", "Renault", "Honda", "Nissan", "Ford", "BMW", "Audi"].map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div className="col-span-2">
             <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary" value={homeFilters.state} onChange={(e) => setHomeFilters({ state: e.target.value })}>
               <option value="all">Todos Estados</option>
               {STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
             </select>
           </div>
-          <div className="col-span-3">
+          <div className="col-span-2">
             <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary" value={homeFilters.sort} onChange={(e) => setHomeFilters({ sort: e.target.value })}>
               {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>

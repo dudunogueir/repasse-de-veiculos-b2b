@@ -1,19 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  ChevronLeft, Heart, MapPin, Calendar, Gauge, 
-  ShieldCheck, MessageCircle, Share2, Info, Loader2, Image as ImageIcon, Store
+  ChevronLeft, ChevronRight, Heart, MapPin, Calendar, Gauge, 
+  ShieldCheck, MessageCircle, Share2, Info, Loader2, Image as ImageIcon, Store,
+  X, Maximize2, Link as LinkIcon
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createPageUrl } from '@/utils';
 import { toast } from "sonner";
+import useEmblaCarousel from 'embla-carousel-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function VehicleDetailsPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const vehicleId = urlParams.get('id');
   const [activePhoto, setActivePhoto] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [emblaFullscreenRef, emblaFullscreenApi] = useEmblaCarousel({ loop: true });
+
+  const scrollPrev = useCallback((e) => { e?.stopPropagation(); if (emblaApi) emblaApi.scrollPrev(); }, [emblaApi]);
+  const scrollNext = useCallback((e) => { e?.stopPropagation(); if (emblaApi) emblaApi.scrollNext(); }, [emblaApi]);
+
+  const scrollFullscreenPrev = useCallback((e) => { e?.stopPropagation(); if (emblaFullscreenApi) emblaFullscreenApi.scrollPrev(); }, [emblaFullscreenApi]);
+  const scrollFullscreenNext = useCallback((e) => { e?.stopPropagation(); if (emblaFullscreenApi) emblaFullscreenApi.scrollNext(); }, [emblaFullscreenApi]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setActivePhoto(emblaApi.selectedScrollSnap());
+  }, [emblaApi, setActivePhoto]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+  }, [emblaApi, onSelect]);
+
+  useEffect(() => {
+    if (isFullscreen && emblaFullscreenApi) {
+      emblaFullscreenApi.scrollTo(activePhoto, true);
+    }
+  }, [isFullscreen, emblaFullscreenApi, activePhoto]);
 
   const { data: vehicle, isLoading } = useQuery({
     queryKey: ['vehicle', vehicleId],
@@ -63,20 +99,31 @@ export default function VehicleDetailsPage() {
     window.location.href = `${createPageUrl('Chat')}?seller=${vehicle.created_by}&vehicle=${vehicle.id}`;
   };
 
-  const handleShare = async () => {
+  const shareUrl = window.location.href;
+  const shareText = vehicle ? `🚗 ${vehicle.make} ${vehicle.model} ${vehicle.manufacturing_year}/${vehicle.model_year} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(vehicle.price || 0)} | Veja o anúncio: ${shareUrl}` : '';
+
+  const handleShareWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    toast.success("Link copiado!");
+  };
+
+  const handleNativeShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${vehicle.make} ${vehicle.model} - Repasse B2B`,
-          text: `Confira este ${vehicle.make} ${vehicle.model} no Repasse B2B.`,
-          url: window.location.href,
+          title: `${vehicle.make} ${vehicle.model}`,
+          text: shareText,
+          url: shareUrl,
         });
       } catch (err) {
         console.log("Erro ao partilhar", err);
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copiado para a área de transferência!");
+      handleCopyLink();
     }
   };
 
@@ -115,33 +162,93 @@ export default function VehicleDetailsPage() {
           <ChevronLeft className="h-6 w-6 text-foreground" />
         </Button>
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="rounded-full bg-card/50" onClick={handleShare}>
-            <Share2 className="h-5 w-5 text-foreground" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full bg-card/50">
+                <Share2 className="h-5 w-5 text-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl">
+              <DropdownMenuItem onClick={handleShareWhatsApp} className="cursor-pointer py-2">
+                <MessageCircle className="mr-2 h-4 w-4 text-green-600" /> WhatsApp
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer py-2">
+                <LinkIcon className="mr-2 h-4 w-4 text-blue-600" /> Copiar Link
+              </DropdownMenuItem>
+              {navigator.share && (
+                <DropdownMenuItem onClick={handleNativeShare} className="cursor-pointer py-2">
+                  <Share2 className="mr-2 h-4 w-4 text-gray-600" /> Mais opções...
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="ghost" size="icon" className="rounded-full bg-card/50" onClick={handleToggleFavorite}>
             <Heart className={`h-5 w-5 ${isFavorite ? 'fill-destructive text-destructive' : 'text-foreground'}`} />
           </Button>
         </div>
       </div>
 
-      <div className="relative w-full aspect-square md:aspect-video bg-muted pt-16 md:pt-0">
+      <div className="relative w-full aspect-square md:aspect-video bg-muted pt-16 md:pt-0 group">
         {hasPhotos ? (
           <>
-            <img 
-              src={vehicle.photos[activePhoto]} 
-              alt={`${vehicle.make} ${vehicle.model}`} 
-              className="w-full h-full object-cover"
-            />
-            {vehicle.photos.length > 1 && (
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-                {vehicle.photos.map((_, idx) => (
-                  <button 
-                    key={idx}
-                    onClick={() => setActivePhoto(idx)}
-                    className={`h-2 rounded-full transition-all ${activePhoto === idx ? 'w-6 bg-primary' : 'w-2 bg-white/70 hover:bg-white'}`}
-                  />
+            <div className="overflow-hidden w-full h-full" ref={emblaRef}>
+              <div className="flex h-full touch-pan-y">
+                {vehicle.photos.map((photo, idx) => (
+                  <div key={idx} className="flex-[0_0_100%] min-w-0 relative h-full cursor-pointer" onClick={() => setIsFullscreen(true)}>
+                    <img 
+                      src={photo} 
+                      alt={`${vehicle.make} ${vehicle.model} - Foto ${idx + 1}`} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 ))}
               </div>
+            </div>
+            
+            {/* Contador de Fotos */}
+            <div className="absolute top-20 right-4 bg-black/50 text-white text-xs font-bold px-2.5 py-1 rounded-full backdrop-blur-md z-10">
+              {activePhoto + 1} / {vehicle.photos.length}
+            </div>
+
+            {/* Botão Maximizar */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute bottom-4 right-4 bg-black/40 hover:bg-black/60 text-white rounded-full backdrop-blur-md z-10"
+              onClick={() => setIsFullscreen(true)}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+
+            {/* Setas de Navegação (Desktop) */}
+            {vehicle.photos.length > 1 && (
+              <>
+                <Button 
+                  variant="ghost" size="icon" 
+                  className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 bg-white/80 hover:bg-white text-black rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex z-10"
+                  onClick={scrollPrev}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <Button 
+                  variant="ghost" size="icon" 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 bg-white/80 hover:bg-white text-black rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex z-10"
+                  onClick={scrollNext}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+
+                {/* Dots */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+                  {vehicle.photos.map((_, idx) => (
+                    <button 
+                      key={idx}
+                      onClick={(e) => { e.stopPropagation(); if(emblaApi) emblaApi.scrollTo(idx); }}
+                      className={`h-2 rounded-full transition-all ${activePhoto === idx ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'}`}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </>
         ) : (
@@ -151,6 +258,68 @@ export default function VehicleDetailsPage() {
           </div>
         )}
       </div>
+
+      {/* Miniaturas */}
+      {hasPhotos && vehicle.photos.length > 1 && (
+        <div className="flex gap-2 p-4 overflow-x-auto scrollbar-hide bg-background">
+          {vehicle.photos.map((photo, idx) => (
+            <button 
+              key={idx}
+              onClick={() => { if(emblaApi) emblaApi.scrollTo(idx); }}
+              className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
+                activePhoto === idx ? 'border-primary ring-2 ring-primary/20' : 'border-transparent opacity-60 hover:opacity-100'
+              }`}
+            >
+              <img src={photo} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Modal Fullscreen */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+          <div className="flex justify-between items-center p-4 text-white z-10 safe-pt">
+            <div className="font-bold">{activePhoto + 1} / {vehicle.photos.length}</div>
+            <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(false)} className="text-white hover:bg-white/20 rounded-full">
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+          
+          <div className="flex-1 relative overflow-hidden" ref={emblaFullscreenRef}>
+            <div className="flex h-full touch-pan-y">
+              {vehicle.photos.map((photo, idx) => (
+                <div key={idx} className="flex-[0_0_100%] min-w-0 relative h-full flex items-center justify-center p-2">
+                  <img 
+                    src={photo} 
+                    alt={`Fullscreen ${idx + 1}`} 
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              ))}
+            </div>
+            
+            {vehicle.photos.length > 1 && (
+              <>
+                <Button 
+                  variant="ghost" size="icon" 
+                  className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 bg-black/50 hover:bg-black/80 text-white rounded-full hidden md:flex"
+                  onClick={scrollFullscreenPrev}
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </Button>
+                <Button 
+                  variant="ghost" size="icon" 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 bg-black/50 hover:bg-black/80 text-white rounded-full hidden md:flex"
+                  onClick={scrollFullscreenNext}
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-3xl mx-auto px-4 -mt-6 relative z-10 space-y-4">
         <Card className="rounded-3xl border-border shadow-sm bg-card overflow-hidden">

@@ -1,8 +1,15 @@
 import React from 'react';
-import { Heart, MapPin, Calendar, Gauge, Image as ImageIcon } from 'lucide-react';
+import { Heart, MapPin, Calendar, Gauge, Image as ImageIcon, Share2, MessageCircle, Link as LinkIcon } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createPageUrl } from '@/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
   // Formatação Profissional de Moeda (Remove centavos vazios para leitura mais limpa)
@@ -17,9 +24,40 @@ export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
 
   // Navegação para a página de Detalhes
   const handleCardClick = (e) => {
-    // Evita abrir os detalhes se o utilizador clicou no coração (favorito)
-    if (e.target.closest('button')) return;
+    // Evita abrir os detalhes se o utilizador clicou num botão ou menu
+    if (e.target.closest('button') || e.target.closest('[role="menuitem"]')) return;
     window.location.href = `${createPageUrl('VehicleDetails')}?id=${vehicle.id}`;
+  };
+
+  const shareUrl = `${window.location.origin}${createPageUrl('VehicleDetails')}?id=${vehicle.id}`;
+  const shareText = `🚗 ${vehicle.make} ${vehicle.model} ${vehicle.manufacturing_year}/${vehicle.model_year} - ${formattedPrice} | Veja o anúncio: ${shareUrl}`;
+
+  const handleShareWhatsApp = (e) => {
+    e.stopPropagation();
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+  };
+
+  const handleCopyLink = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(shareUrl);
+    toast.success("Link copiado!");
+  };
+
+  const handleNativeShare = async (e) => {
+    e.stopPropagation();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${vehicle.make} ${vehicle.model}`,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (err) {
+        console.log("Erro ao partilhar", err);
+      }
+    } else {
+      handleCopyLink(e);
+    }
   };
 
   return (
@@ -48,18 +86,46 @@ export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
           Repasse
         </div>
 
-        {/* Botão de Favorito (Glassmorphism para não poluir a foto) */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 right-2 h-9 w-9 bg-background/50 backdrop-blur-md rounded-full hover:bg-background/80 border border-border/50"
-          onClick={(e) => {
-            e.stopPropagation(); // Impede o clique de abrir a página de detalhes
-            if(onToggleFavorite) onToggleFavorite(vehicle);
-          }}
-        >
-          <Heart className={`h-[18px] w-[18px] ${isFavorite ? 'fill-destructive text-destructive' : 'text-foreground'}`} />
-        </Button>
+        {/* Ações Rápidas (Favorito e Partilha) */}
+        <div className="absolute top-2 right-2 flex flex-col gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 bg-background/50 backdrop-blur-md rounded-full hover:bg-background/80 border border-border/50"
+            onClick={(e) => {
+              e.stopPropagation();
+              if(onToggleFavorite) onToggleFavorite(vehicle);
+            }}
+          >
+            <Heart className={`h-[18px] w-[18px] ${isFavorite ? 'fill-destructive text-destructive' : 'text-foreground'}`} />
+          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 bg-background/50 backdrop-blur-md rounded-full hover:bg-background/80 border border-border/50"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Share2 className="h-[18px] w-[18px] text-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl">
+              <DropdownMenuItem onClick={handleShareWhatsApp} className="cursor-pointer py-2">
+                <MessageCircle className="mr-2 h-4 w-4 text-green-600" /> WhatsApp
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyLink} className="cursor-pointer py-2">
+                <LinkIcon className="mr-2 h-4 w-4 text-blue-600" /> Copiar Link
+              </DropdownMenuItem>
+              {navigator.share && (
+                <DropdownMenuItem onClick={handleNativeShare} className="cursor-pointer py-2">
+                  <Share2 className="mr-2 h-4 w-4 text-gray-600" /> Mais opções...
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* 2. ÁREA DE DADOS B2B */}

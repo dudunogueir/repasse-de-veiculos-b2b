@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 // Esta variável fica fora do componente, por isso não é destruída 
 // quando você muda de aba (essencial para o "Stack Preservation").
 let globalHomeFilters = {
-  make: '',
+  search: '',
+  make: 'all',
   model: '',
   state: 'all',
+  transmission: 'all',
   minPrice: '',
   maxPrice: '',
   minYear: '',
   maxYear: '',
+  maxKm: '',
   sort: 'recent'
 };
 
@@ -38,13 +41,16 @@ export const useNavigationStore = () => {
 
   const resetHomeFilters = () => {
     globalHomeFilters = {
-      make: '',
+      search: '',
+      make: 'all',
       model: '',
       state: 'all',
+      transmission: 'all',
       minPrice: '',
       maxPrice: '',
       minYear: '',
       maxYear: '',
+      maxKm: '',
       sort: 'recent'
     };
     listeners.forEach(listener => listener(globalHomeFilters));
