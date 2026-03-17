@@ -1,94 +1,118 @@
-// src/pages/Favorites.jsx
 import React from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart, Car, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Heart, ChevronLeft, Loader2, Search, Car } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import VehicleCard from '../components/vehicle/VehicleCard';
-import PullToRefresh from '@/components/shared/PullToRefresh';
+import { useAuth } from '@/lib/AuthContext';
+import { createPageUrl } from '@/utils';
 import { toast } from "sonner";
 
 export default function FavoritesPage() {
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  // 1. Buscar a lista de favoritos do usuário logado [cite: 127]
-  const { data: favorites, isLoading, refetch } = useQuery({
-    queryKey: ['favorites-page'],
+  // 1. Busca os IDs dos favoritos do utilizador logado
+  const { data: favorites, isLoading: loadingFavs, refetch: refetchFavorites } = useQuery({
+    queryKey: ['favorites'],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      // Filtramos os favoritos criados pelo e-mail do usuário [cite: 123, 132]
+      if (!user?.email) return [];
       const allFavs = await base44.entities.Favorite.list();
       return allFavs.filter(f => f.created_by === user.email);
-    }
+    },
+    enabled: !!user?.email
   });
 
-  // 2. Buscar os dados reais dos veículos para garantir que ainda estão ativos 
-  const { data: favoriteVehicles, isLoading: isLoadingVehicles } = useQuery({
-    queryKey: ['favorite-vehicles-data', favorites],
-    enabled: !!favorites && favorites.length > 0,
-    queryFn: async () => {
-      // Para cada favorito, buscamos o veículo correspondente na coleção 'Veículos' [cite: 124]
-      const vehiclePromises = favorites.map(fav => 
-        base44.entities.Vehicle.get(fav.vehicle_id).catch(() => null)
-      );
-      const results = await Promise.all(vehiclePromises);
-      // Removemos veículos que foram excluídos ou vendidos [cite: 24, 59]
-      return results.filter(v => v !== null && v.status === 'active');
-    }
+  // 2. Busca todos os veículos ativos para cruzar os dados (Live Sync)
+  const { data: vehicles, isLoading: loadingVehicles } = useQuery({
+    queryKey: ['active-vehicles'],
+    queryFn: () => base44.entities.Vehicle.filter({ status: 'active' })
   });
 
-  const handleRefresh = async () => {
-    await refetch();
-    toast.info("Favoritos atualizados");
-  };
+  // 3. Filtra apenas os veículos que estão na lista de favoritos
+  const favoriteVehicles = vehicles?.filter(v => 
+    favorites?.some(f => f.vehicle_id === v.id)
+  ) || [];
 
-  const handleRemoveFavorite = async (vehicle) => {
-    try {
-      const targetFav = favorites.find(f => f.vehicle_id === vehicle.id);
-      if (targetFav) {
-        await base44.entities.Favorite.delete(targetFav.id);
-        queryClient.invalidateQueries(['favorites-page']);
-        toast.success("Removido dos favoritos");
-      }
-    } catch (error) {
-      toast.error("Erro ao remover favorito");
+  const handleToggleFavorite = async (vehicle) => {
+    const existingFav = favorites?.find(f => f.vehicle_id === vehicle.id);
+    if (existingFav) {
+      await base44.entities.Favorite.delete(existingFav.id);
+      toast.success("Veículo removido da sua lista.");
+      refetchFavorites();
     }
   };
 
-  if (isLoading || (favorites?.length > 0 && isLoadingVehicles)) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
-      </div>
-    );
-  }
+  const isLoading = loadingFavs || loadingVehicles;
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="max-w-7xl mx-auto pb-24 px-1">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Meus Favoritos</h1>
-          <p className="text-gray-500 mt-1">Veículos que você demonstrou interesse[cite: 57].</p>
+    <div className="min-h-screen bg-background pb-32">
+      
+      {/* HEADER NATIVO COM BLUR */}
+      <div className="sticky top-0 z-50 flex items-center gap-3 px-4 h-16 bg-background/90 backdrop-blur-xl border-b border-border safe-pt">
+        <Button variant="ghost" size="icon" className="rounded-full bg-card/50" onClick={() => window.history.back()}>
+          <ChevronLeft className="h-6 w-6 text-foreground" />
+        </Button>
+        <h1 className="text-lg font-bold text-foreground">Veículos Guardados</h1>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 mt-6">
+        
+        {/* CABEÇALHO DA PÁGININA */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">Os seus Favoritos</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Compare oportunidades e feche negócio rapidamente.
+          </p>
         </div>
 
-        {!favoriteVehicles || favoriteVehicles.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
-            <Heart className="h-12 w-12 mx-auto text-gray-200 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">Nenhum favorito ainda</h3>
-            <p className="text-gray-500">Toque no coração nos anúncios para salvar veículos aqui[cite: 25].</p>
+        {/* ESTADOS DE CARREGAMENTO E LISTA */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm font-medium text-muted-foreground animate-pulse">A sincronizar o seu stock guardado...</p>
           </div>
+        ) : favoriteVehicles.length === 0 ? (
+          
+          /* EMPTY STATE (ESTADO VAZIO) PREMIUM */
+          <div className="text-center py-20 bg-card rounded-3xl border border-dashed border-border shadow-sm">
+            <div className="h-20 w-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Heart className="h-10 w-10 text-muted-foreground/40" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground">Nenhum veículo guardado</h3>
+            <p className="text-muted-foreground text-sm mb-8 px-10 max-w-md mx-auto">
+              Quando encontrar uma boa oportunidade de repasse, toque no coração para a guardar aqui.
+            </p>
+            <Button 
+              onClick={() => window.location.href = createPageUrl('Home')} 
+              className="rounded-xl h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md shadow-primary/20"
+            >
+              <Search className="h-4 w-4 mr-2" /> Explorar Estoque
+            </Button>
+          </div>
+          
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {favoriteVehicles.map((vehicle) => (
-              <VehicleCard 
-                key={vehicle.id} 
-                vehicle={vehicle} 
-                isFavorite={true}
-                onToggleFavorite={handleRemoveFavorite}
-              />
-            ))}
+          
+          /* GRID DE CARTÕES (Usando o nosso VehicleCard atualizado) */
+          <div className="space-y-4">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                {favoriteVehicles.length} Veículo(s) guardado(s)
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              {favoriteVehicles.map((vehicle) => (
+                <VehicleCard 
+                  key={vehicle.id} 
+                  vehicle={vehicle} 
+                  isFavorite={true} // Se está nesta lista, é sempre favorito
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              ))}
+            </div>
           </div>
         )}
+
       </div>
-    </PullToRefresh>
+    </div>
   );
 }
