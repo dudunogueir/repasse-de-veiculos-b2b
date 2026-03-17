@@ -63,7 +63,7 @@ export default function AdvertisePage() {
     }
   });
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm({
     defaultValues: {
       make: '',
       model: '',
@@ -74,12 +74,48 @@ export default function AdvertisePage() {
       color: '',
       mileage: '',
       state: '',
-      city: ''
+      city: '',
+      status: 'active'
     }
   });
 
   const selectedMake = watch("make");
   const selectedState = watch("state");
+  const currentStatus = watch("status");
+
+  // Busca os dados do veículo se estiver editando
+  const { data: vehicleToEdit, isLoading: isLoadingVehicle } = useQuery({
+    queryKey: ['vehicle', vehicleId],
+    queryFn: () => base44.entities.Vehicle.get(vehicleId),
+    enabled: isEditing
+  });
+
+  // Preenche o formulário quando os dados chegam
+  React.useEffect(() => {
+    if (vehicleToEdit && isEditing) {
+      reset({
+        make: vehicleToEdit.make,
+        model: vehicleToEdit.model,
+        version: vehicleToEdit.version || '',
+        manufacturing_year: vehicleToEdit.manufacturing_year,
+        model_year: vehicleToEdit.model_year,
+        price: vehicleToEdit.price,
+        color: vehicleToEdit.color || '',
+        mileage: vehicleToEdit.mileage || vehicleToEdit.km || '',
+        state: vehicleToEdit.state,
+        city: vehicleToEdit.city || '',
+        status: vehicleToEdit.status || 'active'
+      });
+      
+      setIsFeatured(vehicleToEdit.is_featured || false);
+
+      const loadedPhotos = ['', '', ''];
+      if (vehicleToEdit.photos) {
+        vehicleToEdit.photos.forEach((p, i) => { if (i < 3) loadedPhotos[i] = p; });
+      }
+      setPhotos(loadedPhotos);
+    }
+  }, [vehicleToEdit, isEditing, reset]);
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
