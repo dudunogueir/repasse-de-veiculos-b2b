@@ -92,7 +92,7 @@ export default function AdvertisePage() {
   // Busca os dados do veículo se estiver editando
   const { data: vehicleToEdit, isLoading: isLoadingVehicle } = useQuery({
     queryKey: ['vehicle', vehicleId],
-    queryFn: () => base44.entities.Vehicle.get(vehicleId),
+    queryFn: () => base44.entities.Vehicle.read(vehicleId),
     enabled: isEditing
   });
 
