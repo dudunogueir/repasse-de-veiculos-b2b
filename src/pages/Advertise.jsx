@@ -20,6 +20,14 @@ import {
   DrawerTrigger,
   DrawerFooter,
 } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { createPageUrl } from '@/utils';
 
@@ -129,17 +137,29 @@ export default function AdvertisePage() {
         <p className="text-muted-foreground mt-2">Publique seu veículo no repasse B2B.</p>
       </div>
 
-      {isLimitReached ? (
-        <Card className="border-red-200 bg-red-50 mb-6">
-          <CardContent className="p-6 text-center">
-            <h3 className="text-lg font-bold text-red-800 mb-2">Limite de Anúncios Atingido</h3>
-            <p className="text-red-600 mb-4">Seu plano atual ({subscription?.plan}) permite até {subscription?.vehicles_limit} anúncios simultâneos.</p>
-            <Button onClick={() => window.location.href = createPageUrl('Plans')} className="bg-red-600 hover:bg-red-700">
-              Fazer Upgrade de Plano
+      <Dialog open={isLimitReached}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Limite de Anúncios Atingido</DialogTitle>
+            <DialogDescription className="text-center">
+              Você atingiu o limite do seu plano ({subscription?.plan}). Faça upgrade para continuar anunciando!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center py-4">
+            <div className="h-16 w-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+              <Car className="h-8 w-8" />
+            </div>
+            <p className="text-sm text-center text-muted-foreground">
+              Seu plano atual permite até <strong>{subscription?.vehicles_limit}</strong> anúncios simultâneos.
+            </p>
+          </div>
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={() => window.location.href = createPageUrl('Plans')} className="w-full h-12 text-lg font-bold">
+              Ver Planos e Fazer Upgrade
             </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <form onSubmit={handleSubmit(onSubmit)} className={`space-y-6 ${isLimitReached ? 'opacity-50 pointer-events-none' : ''}`}>
         

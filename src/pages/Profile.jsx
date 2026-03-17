@@ -28,16 +28,27 @@ import { Loader2, CheckCircle, Building2, Trash2, MapPin, ChevronRight, Check, S
 import { STATES } from '../components/shared/utils';
 import { toast } from "sonner";
 import { useAuth } from '@/lib/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 
 export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm();
 
   const selectedState = watch("state");
+
+  const { data: subscription } = useQuery({
+    queryKey: ['my-subscription-profile'],
+    queryFn: async () => {
+      if (!user) return null;
+      const subs = await base44.entities.Subscription.filter({ user_id: user.email, status: 'active' });
+      return subs.length > 0 ? subs[0] : { plan: 'free' };
+    },
+    enabled: !!user
+  });
 
   useEffect(() => {
     const loadUser = async () => {
@@ -110,7 +121,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </CardHeader>
-          <div className="px-6 pt-4">
+          <div className="px-6 pt-4 flex flex-col gap-2">
             {watch("cnpj_verified") ? (
               <div className="flex items-center gap-2 bg-green-50 text-green-700 p-3 rounded-xl border border-green-100">
                 <ShieldCheck className="h-5 w-5" />
@@ -125,6 +136,25 @@ export default function ProfilePage() {
                 <div>
                   <p className="text-sm font-bold">Verificação Pendente</p>
                   <p className="text-xs opacity-80">Seu CNPJ está em análise pela nossa equipe.</p>
+                </div>
+              </div>
+            )}
+            
+            {subscription?.plan === 'pro' && (
+              <div className="flex items-center gap-2 bg-purple-50 text-purple-700 p-3 rounded-xl border border-purple-100">
+                <span className="text-lg">⭐</span>
+                <div>
+                  <p className="text-sm font-bold">Plano Pro</p>
+                  <p className="text-xs opacity-80">Você tem acesso a destaques e mais anúncios.</p>
+                </div>
+              </div>
+            )}
+            {subscription?.plan === 'enterprise' && (
+              <div className="flex items-center gap-2 bg-yellow-50 text-yellow-700 p-3 rounded-xl border border-yellow-100">
+                <span className="text-lg">🏆</span>
+                <div>
+                  <p className="text-sm font-bold">Plano Enterprise</p>
+                  <p className="text-xs opacity-80">Acesso ilimitado e suporte prioritário.</p>
                 </div>
               </div>
             )}
