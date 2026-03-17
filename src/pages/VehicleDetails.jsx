@@ -17,6 +17,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import SellerBadge from '../components/vehicle/SellerBadge';
+import FipeComparison from '../components/vehicle/FipeComparison';
 
 export default function VehicleDetailsPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -393,6 +395,8 @@ export default function VehicleDetailsPage() {
           </CardContent>
         </Card>
 
+        <FipeComparison vehicle={vehicle} />
+
         {/* CARTÃO DO VENDEDOR COM BOTÃO DE VER ESTOQUE */}
         <Card className="rounded-3xl border-border shadow-sm bg-primary/5 border-primary/10">
           <CardContent className="p-6">
@@ -402,7 +406,8 @@ export default function VehicleDetailsPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-foreground text-base">Concessionária Verificada</h3>
+                  <h3 className="font-bold text-foreground text-base">Vendedor</h3>
+                  <SellerBadge email={vehicle.created_by} />
                 </div>
                 <p className="text-xs text-muted-foreground font-medium">Anunciado por: <span className="text-foreground">{vehicle.created_by}</span></p>
                 <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Negociação direta e segura</p>

@@ -37,6 +37,33 @@ export default function AdminPage() {
     enabled: isAdmin
   });
 
+  // 5. Busca de Usuários para Verificação
+  const { data: users, isLoading: loadingUsers } = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: async (id) => {
+      await base44.entities.User.update(id, { cnpj_verified: true, verified_at: new Date().toISOString() });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-users']);
+      toast.success("Concessionária verificada com sucesso!");
+    }
+  });
+
+  const unverifyMutation = useMutation({
+    mutationFn: async (id) => {
+      await base44.entities.User.update(id, { cnpj_verified: false, verified_at: null });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-users']);
+      toast.success("Verificação removida!");
+    }
+  });
+
   // 4. Mutação para Exclusão Administrativa
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Vehicle.delete(id),
@@ -75,6 +102,9 @@ export default function AdminPage() {
           </TabsTrigger>
           <TabsTrigger value="logs" className="rounded-lg gap-2">
             <History className="h-4 w-4" /> Log de Auditoria
+          </TabsTrigger>
+          <TabsTrigger value="verify" className="rounded-lg gap-2">
+            <ShieldCheck className="h-4 w-4" /> Verificar CNPJ
           </TabsTrigger>
         </TabsList>
 
@@ -129,6 +159,51 @@ export default function AdminPage() {
                         <Button variant="ghost" size="icon" className="text-red-500" onClick={() => deleteMutation.mutate(vehicle.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* --- ABA DE VERIFICAÇÃO --- */}
+        <TabsContent value="verify">
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <CardHeader className="border-b bg-gray-50/50">
+              <CardTitle className="text-lg">Verificar Concessionárias</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Concessionária</TableHead>
+                    <TableHead>CNPJ</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users?.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.company_name || u.full_name}</TableCell>
+                      <TableCell className="text-sm">{u.cnpj || 'Não informado'}</TableCell>
+                      <TableCell className="text-sm text-gray-500">{u.email}</TableCell>
+                      <TableCell>
+                        {u.cnpj_verified ? (
+                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-bold">Verificada</span>
+                        ) : (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-bold">Pendente</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {u.cnpj_verified ? (
+                          <Button variant="outline" size="sm" onClick={() => unverifyMutation.mutate(u.id)}>Remover</Button>
+                        ) : (
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => verifyMutation.mutate(u.id)}>Verificar</Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

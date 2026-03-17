@@ -89,6 +89,11 @@ export default function Layout({ children }) {
                   <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">{user.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
+                    <Link to={createPageUrl('Dashboard')} className="cursor-pointer">
+                      <LayoutDashboard className="mr-2 h-4 w-4" /> Meu Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to={createPageUrl('Profile')} className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" /> Perfil
                     </Link>

@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { motion, AnimatePresence } from 'framer-motion'; // Adicionado para animações nativas
 import NotificationsPage from './pages/Notifications';
+import DashboardPage from './pages/Dashboard';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -77,6 +78,14 @@ const AuthenticatedApp = () => {
           element={
             <LayoutWrapper currentPageName="Notifications">
               <PageTransition><NotificationsPage /></PageTransition>
+            </LayoutWrapper>
+          } 
+        />
+        <Route 
+          path="/Dashboard" 
+          element={
+            <LayoutWrapper currentPageName="Dashboard">
+              <PageTransition><DashboardPage /></PageTransition>
             </LayoutWrapper>
           } 
         />

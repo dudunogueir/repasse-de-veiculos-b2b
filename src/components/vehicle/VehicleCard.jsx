@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import SellerBadge from './SellerBadge';
 
 export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
   // Formatação Profissional de Moeda (Remove centavos vazios para leitura mais limpa)
@@ -136,9 +137,12 @@ export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
           <h3 className="font-bold text-foreground text-base leading-tight line-clamp-1">
             {vehicle.make} {vehicle.model}
           </h3>
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 font-medium">
-            {vehicle.version || 'Versão não informada'}
-          </p>
+          <div className="flex justify-between items-center mt-0.5">
+            <p className="text-xs text-muted-foreground line-clamp-1 font-medium">
+              {vehicle.version || 'Versão não informada'}
+            </p>
+            <SellerBadge email={vehicle.created_by} />
+          </div>
         </div>
 
         {/* O Grande Destaque: Preço B2B com tabular-nums */}

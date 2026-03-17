@@ -24,7 +24,7 @@ import {
   DrawerTrigger,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { Loader2, CheckCircle, Building2, Trash2, MapPin, ChevronRight, Check } from 'lucide-react';
+import { Loader2, CheckCircle, Building2, Trash2, MapPin, ChevronRight, Check, ShieldCheck } from 'lucide-react';
 import { STATES } from '../components/shared/utils';
 import { toast } from "sonner";
 import { useAuth } from '@/lib/AuthContext';
@@ -50,7 +50,9 @@ export default function ProfilePage() {
             phone: user.phone || '',
             state: user.state || '',
             city: user.city || '',
-            email: user.email 
+            email: user.email,
+            cnpj_verified: user.cnpj_verified,
+            verified_at: user.verified_at
         });
       } catch (e) {
         console.error(e);
@@ -108,6 +110,25 @@ export default function ProfilePage() {
               </div>
             </div>
           </CardHeader>
+          <div className="px-6 pt-4">
+            {watch("cnpj_verified") ? (
+              <div className="flex items-center gap-2 bg-green-50 text-green-700 p-3 rounded-xl border border-green-100">
+                <ShieldCheck className="h-5 w-5" />
+                <div>
+                  <p className="text-sm font-bold">Concessionária Verificada</p>
+                  <p className="text-xs opacity-80">Verificada em {watch("verified_at") ? new Date(watch("verified_at")).toLocaleDateString('pt-BR') : 'data não disponível'}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 bg-slate-100 text-slate-600 p-3 rounded-xl border border-slate-200">
+                <div className="h-5 w-5 rounded-full border-2 border-current border-t-transparent animate-spin opacity-50" />
+                <div>
+                  <p className="text-sm font-bold">Verificação Pendente</p>
+                  <p className="text-xs opacity-80">Seu CNPJ está em análise pela nossa equipe.</p>
+                </div>
+              </div>
+            )}
+          </div>
           <CardContent className="pt-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
