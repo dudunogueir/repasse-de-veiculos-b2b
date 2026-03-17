@@ -180,7 +180,7 @@ export default function MyAdsPage() {
                           variant="outline" 
                           size="sm" 
                           className="flex-1 h-9 rounded-lg font-bold bg-background"
-                          onClick={() => window.location.href = `${createPageUrl('EditVehicle')}?id=${vehicle.id}`}
+                          onClick={() => window.location.href = `${createPageUrl('Advertise')}?id=${vehicle.id}`}
                         >
                           <Edit className="h-4 w-4 mr-2" /> Editar
                         </Button>
