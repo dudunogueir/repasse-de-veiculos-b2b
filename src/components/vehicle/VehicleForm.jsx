@@ -1,3 +1,4 @@
+// src/components/vehicle/VehicleForm.jsx
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge"; // <-- AQUI ESTÁ A CORREÇÃO! Adicionamos a importação do Badge
 import { Loader2, Upload, X, FileText, CheckCircle } from 'lucide-react';
 import { STATES, CAMBIO_OPTIONS } from '../shared/utils';
 import { base44 } from '@/api/base44Client';
