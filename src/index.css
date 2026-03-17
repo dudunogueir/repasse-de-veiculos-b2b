@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 /* :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -72,7 +71,36 @@ button:focus-visible {
   }
 } */
 
+/* --- CONFIGURAÇÕES PARA APP NATIVO (iOS/Android) --- */
 
+body {
+  /* Evita o efeito "elástico" (overscroll) ao chegar no fim ou topo da página */
+  overscroll-behavior-y: none;
+  
+  /* Desativa a seleção de texto e lupa do sistema (comum na web, indesejado em apps) */
+  -webkit-user-select: none;
+  user-select: none;
+  
+  /* Remove o piscar azul ao tocar em botões no telemóvel */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Permite selecionar texto e interagir APENAS nos campos de digitação (formulários) */
+input, textarea, select {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Classes utilitárias para as Áreas Seguras do iPhone (Notch e Home Indicator) */
+.safe-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* --------------------------------------------------- */
 
 @layer base {
   :root {
@@ -145,8 +173,6 @@ button:focus-visible {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
-
-
 
 @layer base {
   * {
