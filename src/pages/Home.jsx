@@ -144,6 +144,16 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Mobile Search & Filters */}
+        <div className="md:hidden relative mb-3">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar marca, modelo ou versão..." 
+            className="pl-9 h-12 rounded-xl bg-card border-border shadow-sm text-base" 
+            value={homeFilters.search} 
+            onChange={(e) => setHomeFilters({ search: e.target.value })} 
+          />
+        </div>
         <div className="flex gap-2 md:hidden overflow-x-auto pb-2 scrollbar-hide">
           <Drawer>
             <DrawerTrigger asChild>
