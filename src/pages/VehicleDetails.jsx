@@ -23,6 +23,11 @@ export default function VehicleDetailsPage() {
   const vehicleId = urlParams.get('id');
   const [activePhoto, setActivePhoto] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    if (!isFullscreen) setScale(1);
+  }, [isFullscreen]);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [emblaFullscreenRef, emblaFullscreenApi] = useEmblaCarousel({ loop: true });
@@ -100,7 +105,7 @@ export default function VehicleDetailsPage() {
   };
 
   const shareUrl = window.location.href;
-  const shareText = vehicle ? `🚗 ${vehicle.make} ${vehicle.model} ${vehicle.manufacturing_year}/${vehicle.model_year} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(vehicle.price || 0)} | Veja o anúncio: ${shareUrl}` : '';
+  const shareText = vehicle ? `🚗 ${vehicle.make} ${vehicle.model} ${vehicle.version || ''} ${vehicle.model_year} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(vehicle.price || 0)} | KM: ${vehicle.km ? new Intl.NumberFormat('pt-BR').format(vehicle.km) + ' km' : '0 km'} | Confira este veículo no Repasse B2B: ${shareUrl}` : '';
 
   const handleShareWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
@@ -293,7 +298,12 @@ export default function VehicleDetailsPage() {
                   <img 
                     src={photo} 
                     alt={`Fullscreen ${idx + 1}`} 
-                    className="max-w-full max-h-full object-contain"
+                    className="max-w-full max-h-full object-contain transition-transform duration-200"
+                    style={{ transform: `scale(${scale})`, touchAction: 'pinch-zoom' }}
+                    onWheel={(e) => {
+                      if (e.deltaY < 0) setScale(prev => Math.min(prev + 0.2, 4));
+                      else setScale(prev => Math.max(prev - 0.2, 1));
+                    }}
                   />
                 </div>
               ))}
@@ -358,7 +368,7 @@ export default function VehicleDetailsPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-muted-foreground uppercase">Quilometragem</p>
-                  <p className="font-semibold text-foreground tabular-nums">{vehicle.mileage?.toLocaleString('pt-BR')} km</p>
+                  <p className="font-semibold text-foreground tabular-nums">{vehicle.km?.toLocaleString('pt-BR')} km</p>
                 </div>
               </div>
               <div className="flex gap-3 items-center">

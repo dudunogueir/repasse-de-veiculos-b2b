@@ -30,7 +30,7 @@ export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
   };
 
   const shareUrl = `${window.location.origin}${createPageUrl('VehicleDetails')}?id=${vehicle.id}`;
-  const shareText = `🚗 ${vehicle.make} ${vehicle.model} ${vehicle.manufacturing_year}/${vehicle.model_year} - ${formattedPrice} | Veja o anúncio: ${shareUrl}`;
+  const shareText = `🚗 ${vehicle.make} ${vehicle.model} ${vehicle.version || ''} ${vehicle.model_year} - ${formattedPrice} | KM: ${vehicle.km ? new Intl.NumberFormat('pt-BR').format(vehicle.km) + ' km' : '0 km'} | Confira este veículo no Repasse B2B: ${shareUrl}`;
 
   const handleShareWhatsApp = (e) => {
     e.stopPropagation();
@@ -161,7 +161,7 @@ export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
           
           <div className="flex items-center text-xs text-muted-foreground font-semibold">
             <Gauge className="h-3.5 w-3.5 mr-1.5 opacity-60" />
-            <span className="tabular-nums">{vehicle.mileage?.toLocaleString('pt-BR')} km</span>
+            <span className="tabular-nums">{vehicle.km?.toLocaleString('pt-BR')} km</span>
           </div>
           
           <div className="flex items-center text-xs text-muted-foreground font-semibold col-span-2">

@@ -58,15 +58,15 @@ export default function HomePage() {
         if (debouncedFilters.transmission !== 'all' && debouncedFilters.transmission && v.transmission !== debouncedFilters.transmission) return false;
         if (debouncedFilters.minPrice && v.price < parseInt(debouncedFilters.minPrice)) return false;
         if (debouncedFilters.maxPrice && v.price > parseInt(debouncedFilters.maxPrice)) return false;
-        if (debouncedFilters.minYear && v.manufacturing_year < parseInt(debouncedFilters.minYear)) return false;
-        if (debouncedFilters.maxYear && v.manufacturing_year > parseInt(debouncedFilters.maxYear)) return false;
-        if (debouncedFilters.maxKm && v.mileage > parseInt(debouncedFilters.maxKm)) return false;
+        if (debouncedFilters.minYear && v.model_year < parseInt(debouncedFilters.minYear)) return false;
+        if (debouncedFilters.maxYear && v.model_year > parseInt(debouncedFilters.maxYear)) return false;
+        if (debouncedFilters.maxKm && v.km > parseInt(debouncedFilters.maxKm)) return false;
         return true;
       }).sort((a, b) => {
         if (debouncedFilters.sort === 'recent') return new Date(b.created_date) - new Date(a.created_date);
         if (debouncedFilters.sort === 'price_asc') return a.price - b.price;
         if (debouncedFilters.sort === 'price_desc') return b.price - a.price;
-        if (debouncedFilters.sort === 'km_asc') return (a.mileage || 0) - (b.mileage || 0);
+        if (debouncedFilters.sort === 'km_asc') return (a.km || 0) - (b.km || 0);
         return 0;
       });
     }
@@ -292,7 +292,7 @@ export default function HomePage() {
           <div className="space-y-4">
             <div className="flex justify-between items-center px-1">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                {vehicles?.length || 0} Resultados encontrados
+                {vehicles?.length || 0} veículos encontrados
               </span>
             </div>
             
