@@ -78,6 +78,14 @@ const AuthenticatedApp = () => {
         ))}
 
         <Route 
+          path="/Advertise/:id" 
+          element={
+            <LayoutWrapper currentPageName="Advertise">
+              <PageTransition><Pages.Advertise /></PageTransition>
+            </LayoutWrapper>
+          } 
+        />
+        <Route 
           path="/Notifications" 
           element={
             <LayoutWrapper currentPageName="Notifications">
