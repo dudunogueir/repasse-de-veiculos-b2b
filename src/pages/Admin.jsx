@@ -51,17 +51,23 @@ export default function AdminPage() {
   });
 
   const updateSubMutation = useMutation({
-    mutationFn: async ({ id, plan }) => {
-      let limits = { vehicles_limit: 3, highlight_slots: 0 };
-      if (plan === 'starter') limits = { vehicles_limit: 10, highlight_slots: 2 };
-      if (plan === 'pro') limits = { vehicles_limit: 30, highlight_slots: 10 };
-      if (plan === 'enterprise') limits = { vehicles_limit: 9999, highlight_slots: 9999 };
-      
-      await base44.entities.Subscription.update(id, { plan, ...limits });
+    mutationFn: async ({ id, plan, status }) => {
+      let updates = {};
+      if (plan) {
+        let limits = { vehicles_limit: 3, highlight_slots: 0 };
+        if (plan === 'starter') limits = { vehicles_limit: 10, highlight_slots: 2 };
+        if (plan === 'pro') limits = { vehicles_limit: 30, highlight_slots: 10 };
+        if (plan === 'enterprise') limits = { vehicles_limit: 9999, highlight_slots: 9999 };
+        updates = { plan, ...limits };
+      }
+      if (status) {
+        updates.status = status;
+      }
+      await base44.entities.Subscription.update(id, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['admin-subscriptions']);
-      toast.success("Plano atualizado!");
+      toast.success("Assinatura atualizada!");
     }
   });
 
