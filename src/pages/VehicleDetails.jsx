@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { 
   ChevronLeft, Heart, MapPin, Calendar, Gauge, 
-  ShieldCheck, MessageCircle, Share2, Info, Loader2, Image as ImageIcon 
+  ShieldCheck, MessageCircle, Share2, Info, Loader2, Image as ImageIcon, Store
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,14 +15,12 @@ export default function VehicleDetailsPage() {
   const vehicleId = urlParams.get('id');
   const [activePhoto, setActivePhoto] = useState(0);
 
-  // 1. Busca os dados do veículo
   const { data: vehicle, isLoading } = useQuery({
     queryKey: ['vehicle', vehicleId],
     queryFn: () => base44.entities.Vehicle.read(vehicleId),
     enabled: !!vehicleId
   });
 
-  // 2. Busca os favoritos do utilizador
   const { data: favorites, refetch: refetchFavorites } = useQuery({
     queryKey: ['favorites'],
     queryFn: async () => {
@@ -62,7 +60,6 @@ export default function VehicleDetailsPage() {
   };
 
   const handleContactSeller = () => {
-    // Redireciona para o Chat passando o ID do vendedor e do veículo
     window.location.href = `${createPageUrl('Chat')}?seller=${vehicle.created_by}&vehicle=${vehicle.id}`;
   };
 
@@ -71,7 +68,7 @@ export default function VehicleDetailsPage() {
       try {
         await navigator.share({
           title: `${vehicle.make} ${vehicle.model} - Repasse B2B`,
-          text: `Confere este ${vehicle.make} ${vehicle.model} por R$ ${vehicle.price?.toLocaleString()} no Repasse B2B.`,
+          text: `Confira este ${vehicle.make} ${vehicle.model} no Repasse B2B.`,
           url: window.location.href,
         });
       } catch (err) {
@@ -113,7 +110,6 @@ export default function VehicleDetailsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      {/* HEADER NATIVO COM BLUR */}
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 h-16 bg-background/80 backdrop-blur-xl border-b border-border safe-pt">
         <Button variant="ghost" size="icon" className="rounded-full bg-card/50" onClick={() => window.history.back()}>
           <ChevronLeft className="h-6 w-6 text-foreground" />
@@ -128,7 +124,6 @@ export default function VehicleDetailsPage() {
         </div>
       </div>
 
-      {/* GALERIA DE FOTOS PREMIUM */}
       <div className="relative w-full aspect-square md:aspect-video bg-muted pt-16 md:pt-0">
         {hasPhotos ? (
           <>
@@ -137,7 +132,6 @@ export default function VehicleDetailsPage() {
               alt={`${vehicle.make} ${vehicle.model}`} 
               className="w-full h-full object-cover"
             />
-            {/* Indicadores de fotos */}
             {vehicle.photos.length > 1 && (
               <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
                 {vehicle.photos.map((_, idx) => (
@@ -158,36 +152,24 @@ export default function VehicleDetailsPage() {
         )}
       </div>
 
-      {/* CONTEÚDO PRINCIPAL */}
       <div className="max-w-3xl mx-auto px-4 -mt-6 relative z-10 space-y-4">
-        
-        {/* CARTÃO DE PREÇO E TÍTULO */}
         <Card className="rounded-3xl border-border shadow-sm bg-card overflow-hidden">
           <CardContent className="p-6">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground leading-tight">
-                  {vehicle.make} {vehicle.model}
-                </h1>
-                <p className="text-sm font-medium text-muted-foreground mt-1">
-                  {vehicle.version || 'Versão não informada'}
-                </p>
-              </div>
-            </div>
-            
-            <div className="mt-6">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-                Preço Exclusivo B2B
-              </p>
-              {/* O TABULAR-NUMS AQUI É CRUCIAL PARA CREDIBILIDADE FINANCEIRA */}
-              <p className="text-4xl font-extrabold text-primary tabular-nums tracking-tighter">
-                {formattedPrice}
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold text-foreground leading-tight">
+              {vehicle.make} {vehicle.model}
+            </h1>
+            <p className="text-sm font-medium text-muted-foreground mt-1 mb-6">
+              {vehicle.version || 'Versão não informada'}
+            </p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+              Preço Exclusivo B2B
+            </p>
+            <p className="text-4xl font-extrabold text-primary tabular-nums tracking-tighter">
+              {formattedPrice}
+            </p>
           </CardContent>
         </Card>
 
-        {/* CARTÃO DE ESPECIFICAÇÕES */}
         <Card className="rounded-3xl border-border shadow-sm bg-card">
           <CardContent className="p-6">
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider mb-4">Ficha Técnica</h3>
@@ -232,24 +214,33 @@ export default function VehicleDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* CARTÃO DO VENDEDOR (SOCIAL PROOF / CORPORATE TRUST) */}
+        {/* CARTÃO DO VENDEDOR COM BOTÃO DE VER ESTOQUE */}
         <Card className="rounded-3xl border-border shadow-sm bg-primary/5 border-primary/10">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-7 w-7 text-primary" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-foreground text-base">Concessionária Verificada</h3>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <ShieldCheck className="h-7 w-7 text-primary" />
               </div>
-              <p className="text-xs text-muted-foreground font-medium">Anunciado por: <span className="text-foreground">{vehicle.created_by}</span></p>
-              <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Negociação direta e segura</p>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-foreground text-base">Concessionária Verificada</h3>
+                </div>
+                <p className="text-xs text-muted-foreground font-medium">Anunciado por: <span className="text-foreground">{vehicle.created_by}</span></p>
+                <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Negociação direta e segura</p>
+              </div>
             </div>
+            
+            <Button 
+              variant="outline" 
+              className="w-full h-11 rounded-xl font-bold border-primary/20 text-primary bg-background hover:bg-primary/10"
+              onClick={() => window.location.href = `${createPageUrl('Home')}?seller=${vehicle.created_by}`}
+            >
+              <Store className="h-4 w-4 mr-2" /> Ver estoque deste vendedor
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* CALL TO ACTION NATIVA (FIXED BOTTOM BAR) */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-xl border-t border-border z-40 safe-pb shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <div className="max-w-3xl mx-auto">
           <Button 
