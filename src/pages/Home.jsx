@@ -52,7 +52,7 @@ export default function HomePage() {
         if (debouncedFilters.sort === 'price_asc') return a.price - b.price;
         if (debouncedFilters.sort === 'price_desc') return b.price - a.price;
         return 0;
-      });
+      }); 
     }
   });
 
