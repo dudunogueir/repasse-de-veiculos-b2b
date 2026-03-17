@@ -4,9 +4,8 @@ import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { 
-  Car, PlusCircle, Heart, MessageSquare, 
-  Bell, LogOut, User, LayoutDashboard,
-  FileText, BellRing, Crown, ShieldCheck
+  Search, PlusCircle, Car, BarChart3, FileText, Heart, MessageSquare, 
+  Bell, LogOut, User, BellRing, Crown, ShieldCheck, CreditCard, Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,11 +23,14 @@ export default function Layout({ children }) {
   const location = useLocation();
 
   const navItems = [
-    { name: 'Buscar', icon: Car, path: 'Home' },
-    { name: 'Anunciar', icon: PlusCircle, path: 'Advertise' },
-    { name: 'Meus Ads', icon: LayoutDashboard, path: 'MyAds' },
-    { name: 'Favoritos', icon: Heart, path: 'Favorites' },
-    { name: 'Chat', icon: MessageSquare, path: 'Chat' },
+    { name: 'Buscar', fullName: 'Buscar Veículos', icon: Search, path: 'Home' },
+    { name: 'Cadastrar', fullName: 'Cadastrar Veículo', icon: PlusCircle, path: 'Advertise' },
+    { name: 'Meus Ads', fullName: 'Meus Anúncios', icon: Car, path: 'MyAds' },
+    { name: 'Dashboard', fullName: 'Meu Dashboard', icon: BarChart3, path: 'Dashboard' },
+    { name: 'Propostas', fullName: 'Propostas', icon: FileText, path: 'Proposals' },
+    { name: 'Favoritos', fullName: 'Favoritos', icon: Heart, path: 'Favorites' },
+    { name: 'Mensagens', fullName: 'Mensagens', icon: MessageSquare, path: 'Chat' },
+    { name: 'Notificações', fullName: 'Notificações', icon: Bell, path: 'Notifications' },
   ];
 
   const isActive = (path) => {
@@ -48,15 +50,6 @@ export default function Layout({ children }) {
             <span className="text-lg font-bold tracking-tight hidden sm:block">Repasse B2B</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6 ml-8 flex-1">
-            <Link to={createPageUrl('Home')} className={`text-sm font-medium transition-colors ${isActive('Home') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Buscar Veículos</Link>
-            <Link to={createPageUrl('MyAds')} className={`text-sm font-medium transition-colors ${isActive('MyAds') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Meus Anúncios</Link>
-            <Link to={createPageUrl('Advertise')} className={`text-sm font-medium transition-colors ${isActive('Advertise') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Cadastrar Veículo</Link>
-            <Link to={createPageUrl('Favorites')} className={`text-sm font-medium transition-colors ${isActive('Favorites') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Favoritos</Link>
-            <Link to={createPageUrl('Chat')} className={`text-sm font-medium transition-colors ${isActive('Chat') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Mensagens</Link>
-          </div>
-
           <div className="flex items-center gap-2">
             {user && (
               <NotificationsSheet />
@@ -71,44 +64,49 @@ export default function Layout({ children }) {
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-xl">
+                <DropdownMenuContent align="end" className="w-64 rounded-xl">
                   <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">{user.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {(user.role === 'admin' || user.role === 'Administrador') && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to={createPageUrl('Admin')} className="cursor-pointer">
-                          <ShieldCheck className="mr-2 h-4 w-4" /> Painel Admin
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem asChild>
-                    <Link to={createPageUrl('Dashboard')} className="cursor-pointer">
-                      <LayoutDashboard className="mr-2 h-4 w-4" /> Meu Dashboard
-                    </Link>
-                  </DropdownMenuItem>
+                  
                   <DropdownMenuItem asChild>
                     <Link to={createPageUrl('Profile')} className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" /> Perfil
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to={createPageUrl('Proposals')} className="cursor-pointer">
-                      <FileText className="mr-2 h-4 w-4" /> Minhas Propostas
+                      <User className="mr-2 h-4 w-4" /> Meu Perfil
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to={createPageUrl('AlertPreferences')} className="cursor-pointer">
-                      <BellRing className="mr-2 h-4 w-4" /> Alertas
+                      <BellRing className="mr-2 h-4 w-4" /> Preferências de Alerta
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to={createPageUrl('Plans')} className="cursor-pointer">
-                      <Crown className="mr-2 h-4 w-4" /> Planos
+                      <Crown className="mr-2 h-4 w-4" /> Planos e Assinatura
                     </Link>
                   </DropdownMenuItem>
+
+                  {(user.role === 'admin' || user.role === 'Administrador') && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs font-bold text-primary uppercase tracking-wider">Admin</DropdownMenuLabel>
+                      <DropdownMenuItem asChild>
+                        <Link to={createPageUrl('Admin')} className="cursor-pointer">
+                          <ShieldCheck className="mr-2 h-4 w-4" /> Verificar Concessionárias
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={createPageUrl('Admin')} className="cursor-pointer">
+                          <CreditCard className="mr-2 h-4 w-4" /> Gerenciar Assinaturas
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={createPageUrl('Admin')} className="cursor-pointer">
+                          <Database className="mr-2 h-4 w-4" /> Popular Dados de Teste
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout} className="text-destructive cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" /> Sair
                   </DropdownMenuItem>
@@ -123,33 +121,60 @@ export default function Layout({ children }) {
         </div>
       </nav>
 
-      {/* Conteúdo Principal com Padding para a Tab Bar */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 w-full pt-4 pb-24 md:pb-8">
-        {children}
-      </main>
+      <div className="flex flex-1 max-w-7xl mx-auto w-full">
+        {/* Desktop Sidebar */}
+        {user && (
+          <aside className="hidden md:flex flex-col w-64 border-r border-border py-6 pr-6 gap-2 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+            {navItems.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={createPageUrl(item.path)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    active 
+                      ? 'bg-primary text-primary-foreground font-semibold shadow-md' 
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.fullName}</span>
+                </Link>
+              );
+            })}
+          </aside>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 w-full p-4 pb-24 md:pb-8 md:pl-8 overflow-x-hidden">
+          {children}
+        </main>
+      </div>
 
       {/* Bottom Tab Bar Nativa - Safe Area Bottom */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-lg border-t border-border safe-pb shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-        <div className="flex justify-around items-center h-16">
-          {navItems.map((item) => {
-            const active = isActive(item.path);
-            return (
-              <Link
-                key={item.name}
-                to={createPageUrl(item.path)}
-                className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all ${
-                  active ? 'text-primary' : 'text-muted-foreground opacity-70'
-                }`}
-              >
-                <item.icon className={`h-5 w-5 ${active ? 'fill-primary/10' : ''}`} strokeWidth={active ? 2.5 : 2} />
-                <span className="text-[10px] font-bold tracking-wide uppercase">
-                  {item.name}
-                </span>
-              </Link>
-            );
-          })}
+      {user && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-lg border-t border-border safe-pb shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+          <div className="flex items-center h-16 overflow-x-auto scrollbar-hide px-2 gap-1">
+            {navItems.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={createPageUrl(item.path)}
+                  className={`flex flex-col items-center justify-center min-w-[72px] h-full space-y-1 transition-all flex-shrink-0 ${
+                    active ? 'text-primary' : 'text-muted-foreground opacity-70'
+                  }`}
+                >
+                  <item.icon className={`h-5 w-5 ${active ? 'fill-primary/10' : ''}`} strokeWidth={active ? 2.5 : 2} />
+                  <span className="text-[10px] font-bold tracking-wide uppercase">
+                    {item.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

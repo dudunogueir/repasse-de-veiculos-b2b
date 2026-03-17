@@ -11,6 +11,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { motion, AnimatePresence } from 'framer-motion'; // Adicionado para animações nativas
+import NotificationsPage from './pages/Notifications';
 import DashboardPage from './pages/Dashboard';
 import ProposalsPage from './pages/Proposals';
 import AlertPreferencesPage from './pages/AlertPreferences';
@@ -76,6 +77,14 @@ const AuthenticatedApp = () => {
           />
         ))}
 
+        <Route 
+          path="/Notifications" 
+          element={
+            <LayoutWrapper currentPageName="Notifications">
+              <PageTransition><NotificationsPage /></PageTransition>
+            </LayoutWrapper>
+          } 
+        />
         <Route 
           path="/Dashboard" 
           element={
