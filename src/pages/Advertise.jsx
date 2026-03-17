@@ -130,32 +130,42 @@ export default function AdvertisePage() {
         manufacturing_year: parseInt(data.manufacturing_year),
         model_year: parseInt(data.model_year),
         mileage: parseInt(data.mileage),
+        km: parseInt(data.mileage), // Garantir que km também é salvo para compatibilidade
         photos: validPhotos,
-        status: 'active',
-        views: 0,
-        created_by: user.email,
-        created_date: new Date().toISOString(),
         is_featured: isFeatured
       };
-      
-      const vehicle = await base44.entities.Vehicle.create(payload);
-      
-      // Trigger alerts
-      try {
-        await base44.functions.invoke('matchVehicleAlerts', { vehicle });
-      } catch (e) {
-        console.error("Error triggering alerts", e);
+
+      if (isEditing) {
+        payload.status = data.status || 'active';
+        return await base44.entities.Vehicle.update(vehicleId, payload);
+      } else {
+        payload.status = 'active';
+        payload.views = 0;
+        payload.created_by = user.email;
+        payload.created_date = new Date().toISOString();
+        
+        const vehicle = await base44.entities.Vehicle.create(payload);
+        
+        // Trigger alerts
+        try {
+          await base44.functions.invoke('matchVehicleAlerts', { vehicle });
+        } catch (e) {
+          console.error("Error triggering alerts", e);
+        }
+        
+        return vehicle;
       }
-      
-      return vehicle;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['my-vehicles']);
-      toast.success("Anúncio criado com sucesso!");
+      if (isEditing) {
+        queryClient.invalidateQueries(['vehicle', vehicleId]);
+      }
+      toast.success(isEditing ? "Anúncio atualizado com sucesso!" : "Anúncio criado com sucesso!");
       window.location.href = createPageUrl('MyAds');
     },
     onError: () => {
-      toast.error("Erro ao criar o anúncio. Verifique os campos.");
+      toast.error(isEditing ? "Erro ao atualizar o anúncio." : "Erro ao criar o anúncio. Verifique os campos.");
     }
   });
 
