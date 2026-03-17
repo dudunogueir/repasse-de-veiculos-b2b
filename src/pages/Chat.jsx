@@ -1,260 +1,229 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
 import { 
-  Send, MessageSquare, Search, ChevronLeft, Loader2, Car
+  Send, ChevronLeft, ShieldCheck, Loader2, MessageSquare, Building2 
 } from 'lucide-react';
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
+import { toast } from "sonner";
 
 export default function ChatPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth();
-  const [activeThread, setActiveThread] = useState(null);
-  const messagesEndRef = useRef(null);
   const urlParams = new URLSearchParams(window.location.search);
+  const initialSeller = urlParams.get('seller');
   
-  const { register, handleSubmit, reset } = useForm();
+  // Estado para controlar se estamos a ver a lista de conversas ou um chat específico
+  const [activeContact, setActiveContact] = useState(initialSeller || null);
+  const [newMessage, setNewMessage] = useState('');
+  const messagesEndRef = useRef(null);
 
-  // 1. Busca de Mensagens e Agrupamento em Conversas (Threads)
-  const { data: threads, isLoading } = useQuery({
-    queryKey: ['chat-threads'],
+  // 1. Busca todas as mensagens do utilizador logado (Polling a cada 5 segundos para tempo real)
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['chat-messages'],
     queryFn: async () => {
-      if (!currentUser) return [];
-      
-      const allMessages = await base44.entities.ChatMessage.list(null, 500); 
-      // Filtra mensagens onde o usuário é remetente ou destinatário
-      const myMessages = allMessages.filter(m => 
-        m.created_by === currentUser.email || m.recipient_id === currentUser.email
-      );
-
-      const threadsMap = {};
-      
-      for (const msg of myMessages) {
-        const isSender = msg.created_by === currentUser.email;
-        const partnerId = isSender ? msg.recipient_id : msg.created_by;
-        const threadId = `${msg.vehicle_id}_${partnerId}`;
-        
-        if (!threadsMap[threadId]) {
-          threadsMap[threadId] = {
-            id: threadId,
-            vehicleId: msg.vehicle_id,
-            partnerId: partnerId,
-            messages: [],
-            unreadCount: 0
-          };
-        }
-        threadsMap[threadId].messages.push(msg);
-        if (!isSender && !msg.read) threadsMap[threadId].unreadCount++;
-      }
-
-      return Object.values(threadsMap).map(t => {
-        t.messages.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
-        t.lastMessage = t.messages[t.messages.length - 1];
-        return t;
-      }).sort((a, b) => new Date(b.lastMessage.created_date) - new Date(a.lastMessage.created_date));
+      if (!user?.email) return [];
+      const allMsgs = await base44.entities.ChatMessage.list();
+      return allMsgs
+        .filter(m => m.sender_id === user.email || m.recipient_id === user.email)
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
     },
-    refetchInterval: 5000,
-    enabled: !!currentUser
+    enabled: !!user?.email,
+    refetchInterval: 5000 
   });
 
-  // 2. Detalhes do Veículo e Parceiro da Conversa Ativa
-  const { data: threadDetails } = useQuery({
-    queryKey: ['thread-details', activeThread?.id],
-    queryFn: async () => {
-      if (!activeThread) return null;
-      const [vehicle, users] = await Promise.all([
-        base44.entities.Vehicle.get(activeThread.vehicleId).catch(() => null),
-        base44.entities.User.list()
-      ]);
-      const partner = users.find(u => u.email === activeThread.partnerId) || { full_name: activeThread.partnerId };
-      return { vehicle, partner };
-    },
-    enabled: !!activeThread
-  });
-
-  // 3. Efeito para abrir chat via URL (vindo de Notificações ou Detalhes)
-  useEffect(() => {
-    if (threads && urlParams.get('vehicle_id')) {
-      const vId = urlParams.get('vehicle_id');
-      const rId = urlParams.get('recipient_id');
-      const found = threads.find(t => t.vehicleId === vId && t.partnerId === rId);
-      if (found) setActiveThread(found);
-    }
-  }, [threads]);
-
-  // 4. Auto-scroll para o fundo
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeThread?.messages, threads]);
-
-  // 5. Mutação para Enviar Mensagem
+  // 2. Mutação para enviar mensagem
   const sendMessageMutation = useMutation({
-    mutationFn: async (data) => {
-      await base44.entities.ChatMessage.create({
-        vehicle_id: activeThread.vehicleId,
-        recipient_id: activeThread.partnerId,
-        content: data.content,
+    mutationFn: async (content) => {
+      return base44.entities.ChatMessage.create({
+        sender_id: user.email,
+        recipient_id: activeContact,
+        content,
+        created_at: new Date().toISOString(),
         read: false
-      });
-      
-      // Notificação para o parceiro [cite: 133, 134]
-      await base44.entities.Notification.create({
-        recipient_id: activeThread.partnerId,
-        type: 'CHAT',
-        message: `Nova mensagem sobre o ${threadDetails?.vehicle?.model || 'veículo'}`,
-        related_id: activeThread.vehicleId
       });
     },
     onSuccess: () => {
-      reset();
-      queryClient.invalidateQueries(['chat-threads']);
+      setNewMessage('');
+      queryClient.invalidateQueries(['chat-messages']);
+      scrollToBottom();
     }
   });
 
-  const onSubmit = (data) => {
-    if (!data.content.trim()) return;
-    sendMessageMutation.mutate(data);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  return (
-    <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-160px)] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex max-w-7xl mx-auto my-2 md:my-4">
-      
-      {/* Sidebar de Conversas */}
-      <div className={cn("w-full md:w-80 border-r border-gray-200 flex flex-col", activeThread ? "hidden md:flex" : "flex")}>
-        <div className="p-4 border-b border-gray-200 bg-gray-50/50">
-          <h2 className="font-bold text-lg text-indigo-950 mb-3">Negociações</h2>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            <Input placeholder="Buscar concessionária..." className="pl-9 bg-white rounded-full h-9" />
-          </div>
+  useEffect(() => {
+    if (activeContact) {
+      scrollToBottom();
+    }
+  }, [messages, activeContact]);
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !activeContact) return;
+    sendMessageMutation.mutate(newMessage.trim());
+  };
+
+  // 3. Extrai a lista de contactos únicos das mensagens
+  const contacts = React.useMemo(() => {
+    if (!messages) return [];
+    const uniqueContacts = new Set();
+    messages.forEach(m => {
+      if (m.sender_id !== user?.email) uniqueContacts.add(m.sender_id);
+      if (m.recipient_id !== user?.email) uniqueContacts.add(m.recipient_id);
+    });
+    if (initialSeller) uniqueContacts.add(initialSeller);
+    return Array.from(uniqueContacts);
+  }, [messages, user, initialSeller]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">A carregar mensagens seguras...</p>
+      </div>
+    );
+  }
+
+  // --- VISTA 1: LISTA DE CONVERSAS ---
+  if (!activeContact) {
+    return (
+      <div className="max-w-3xl mx-auto pb-24 px-4 pt-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Negociações</h1>
+          <p className="text-muted-foreground mt-2">As suas conversas B2B ativas.</p>
         </div>
-        
-        <ScrollArea className="flex-1">
-          {isLoading ? (
-            <div className="p-10 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-indigo-600" /></div>
-          ) : threads?.length === 0 ? (
-            <div className="p-10 text-center text-gray-400">
-              <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-20" />
-              <p className="text-sm">Nenhuma conversa ativa</p>
-            </div>
-          ) : (
-            <div className="flex flex-col">
-              {threads?.map(thread => (
-                <button
-                  key={thread.id}
-                  onClick={() => setActiveThread(thread)}
-                  className={cn(
-                    "p-4 border-b border-gray-50 text-left hover:bg-gray-50 transition-all flex gap-3 items-center",
-                    activeThread?.id === thread.id && "bg-indigo-50/50"
-                  )}
+
+        {contacts.length === 0 ? (
+          <div className="text-center py-20 bg-card rounded-3xl border border-dashed border-border">
+            <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <h3 className="text-lg font-bold">Nenhuma conversa</h3>
+            <p className="text-muted-foreground text-sm mb-6 px-10">Procure veículos no estoque e inicie uma negociação.</p>
+            <Button onClick={() => window.location.href = createPageUrl('Home')} className="rounded-xl">
+              Explorar Estoque
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {contacts.map(contact => {
+              // Encontra a última mensagem com este contacto
+              const lastMsg = messages.slice().reverse().find(m => m.sender_id === contact || m.recipient_id === contact);
+              
+              return (
+                <button 
+                  key={contact}
+                  onClick={() => setActiveContact(contact)}
+                  className="w-full flex items-center gap-4 p-4 bg-card hover:bg-muted/50 border border-border rounded-2xl transition-colors text-left"
                 >
-                  <Avatar className="h-12 w-12 border border-gray-100 shadow-sm">
-                    <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">
-                      {thread.partnerId[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline">
-                      <span className="font-bold text-sm text-gray-900 truncate">
-                        {thread.partnerId.split('@')[0]}
-                      </span>
-                      {thread.lastMessage && (
-                        <span className="text-[10px] text-gray-400">
-                          {formatDistanceToNow(new Date(thread.lastMessage.created_date), { locale: ptBR })}
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Building2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h3 className="font-bold text-foreground truncate">{contact}</h3>
+                      {lastMsg && (
+                        <span className="text-[10px] text-muted-foreground tabular-nums ml-2 shrink-0">
+                          {new Date(lastMsg.created_at).toLocaleDateString('pt-BR')}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-indigo-600 font-semibold truncate">Anúncio #{thread.vehicleId.substring(0, 6)}</p>
-                    <p className="text-xs text-gray-500 truncate mt-0.5">{thread.lastMessage?.content || "Inicie o chat..."}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {lastMsg ? lastMsg.content : 'Iniciar negociação...'}
+                    </p>
                   </div>
-                  {thread.unreadCount > 0 && <span className="h-2.5 w-2.5 bg-red-500 rounded-full" />}
                 </button>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-      </div>
-
-      {/* Janela de Mensagens */}
-      <div className={cn("flex-1 flex flex-col bg-white", !activeThread ? "hidden md:flex" : "flex")}>
-        {activeThread ? (
-          <>
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white/80 backdrop-blur-md z-10 safe-pt">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setActiveThread(null)}>
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-indigo-600 text-white font-bold">
-                    {activeThread.partnerId[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-bold text-sm text-gray-900">
-                    {threadDetails?.partner?.company_name || threadDetails?.partner?.full_name || activeThread.partnerId}
-                  </h3>
-                  <div className="flex items-center gap-1 text-[10px] text-gray-500 font-medium">
-                    <Car className="h-3 w-3" />
-                    {threadDetails?.vehicle ? `${threadDetails.vehicle.make} ${threadDetails.vehicle.model}` : 'Carregando veículo...'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <ScrollArea className="flex-1 p-4 bg-slate-50/50">
-              <div className="space-y-4">
-                {activeThread.messages?.map((msg, idx) => {
-                  const isMe = msg.created_by === currentUser.email;
-                  return (
-                    <div key={idx} className={cn("flex", isMe ? "justify-end" : "justify-start")}>
-                      <div className={cn(
-                        "max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm",
-                        isMe ? "bg-indigo-600 text-white rounded-tr-none" : "bg-white border border-gray-100 text-gray-800 rounded-tl-none"
-                      )}>
-                        <p className="leading-relaxed">{msg.content}</p>
-                        <span className={cn("text-[9px] block mt-1 text-right opacity-70", isMe ? "text-white" : "text-gray-400")}>
-                          {new Date(msg.created_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-
-            <div className="p-4 bg-white border-t border-gray-100 safe-pb">
-              <form onSubmit={handleSubmit(onSubmit)} className="flex gap-2 items-center">
-                <Input 
-                  placeholder="Escreva uma proposta..." 
-                  className="flex-1 bg-gray-50 border-none rounded-full focus-visible:ring-indigo-600 h-11 px-5"
-                  autoComplete="off"
-                  {...register('content', { required: true })}
-                />
-                <Button type="submit" size="icon" disabled={sendMessageMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700 rounded-full h-11 w-11 shrink-0">
-                  {sendMessageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
-              </form>
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-300 bg-gray-50/30">
-            <div className="bg-white p-6 rounded-full shadow-sm mb-4">
-               <MessageSquare className="h-10 w-10 text-indigo-100" />
-            </div>
-            <p className="text-sm font-medium">Selecione uma negociação para começar</p>
+              );
+            })}
           </div>
         )}
       </div>
+    );
+  }
+
+  // --- VISTA 2: CHAT ATIVO COM UM CONTACTO ---
+  const activeMessages = messages?.filter(m => 
+    (m.sender_id === user?.email && m.recipient_id === activeContact) ||
+    (m.recipient_id === user?.email && m.sender_id === activeContact)
+  );
+
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      
+      {/* HEADER DO CHAT (Fixo no topo com Safe Area) */}
+      <div className="sticky top-0 z-50 flex items-center gap-3 px-4 h-16 bg-background/90 backdrop-blur-xl border-b border-border safe-pt">
+        <Button variant="ghost" size="icon" className="rounded-full -ml-2" onClick={() => setActiveContact(null)}>
+          <ChevronLeft className="h-6 w-6 text-foreground" />
+        </Button>
+        <div className="flex items-center gap-3 flex-1 overflow-hidden">
+          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <Building2 className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex flex-col truncate">
+            <span className="font-bold text-sm text-foreground truncate">{activeContact}</span>
+            <span className="text-[10px] text-primary flex items-center font-medium">
+              <ShieldCheck className="h-3 w-3 mr-1" /> Concessionária Verificada
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ÁREA DE MENSAGENS */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32">
+        {activeMessages?.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50 space-y-3">
+            <ShieldCheck className="h-12 w-12" />
+            <p className="text-sm font-medium text-center">
+              Ambiente seguro B2B.<br/>Inicie a negociação com clareza.
+            </p>
+          </div>
+        ) : (
+          activeMessages?.map((msg) => {
+            const isMe = msg.sender_id === user?.email;
+            return (
+              <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                <div 
+                  className={`max-w-[85%] px-4 py-2.5 text-sm shadow-sm ${
+                    isMe 
+                      ? 'bg-primary text-primary-foreground rounded-l-2xl rounded-tr-2xl rounded-br-sm' 
+                      : 'bg-card text-foreground border border-border rounded-r-2xl rounded-tl-2xl rounded-bl-sm'
+                  }`}
+                >
+                  {msg.content}
+                  <div className={`text-[9px] mt-1 text-right ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                    {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* INPUT DO CHAT (Fixo no rodapé com Safe Area inferior para Teclado) */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xl border-t border-border p-3 safe-pb z-50">
+        <form onSubmit={handleSend} className="flex gap-2 max-w-3xl mx-auto">
+          <Input 
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Escreva a sua proposta..." 
+            className="flex-1 rounded-full h-12 bg-card border-input px-5 shadow-sm"
+          />
+          <Button 
+            type="submit" 
+            disabled={!newMessage.trim() || sendMessageMutation.isPending}
+            className="h-12 w-12 rounded-full shrink-0 bg-primary hover:bg-primary/90 shadow-md"
+          >
+            {sendMessageMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+          </Button>
+        </form>
+      </div>
+
     </div>
   );
 }
