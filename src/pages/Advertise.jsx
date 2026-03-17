@@ -222,6 +222,39 @@ export default function AdvertisePage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className={`space-y-6 ${isLimitReached ? 'opacity-50 pointer-events-none' : ''}`}>
         
+        {isEditing && (
+          <Card className="border-border shadow-sm bg-card overflow-hidden rounded-2xl">
+            <CardHeader className="bg-muted/30 border-b border-border py-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Car className="h-5 w-5 text-primary" /> Status da Venda
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5">
+              <div className="flex gap-3">
+                <Button 
+                  type="button"
+                  variant={currentStatus === 'active' ? 'default' : 'outline'}
+                  className={`flex-1 h-12 rounded-xl font-bold ${currentStatus === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' : 'text-muted-foreground'}`}
+                  onClick={() => setValue('status', 'active')}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" /> Disponível
+                </Button>
+                <Button 
+                  type="button"
+                  variant={currentStatus === 'sold' ? 'default' : 'outline'}
+                  className={`flex-1 h-12 rounded-xl font-bold ${currentStatus === 'sold' ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'text-muted-foreground'}`}
+                  onClick={() => setValue('status', 'sold')}
+                >
+                  <DollarSign className="h-4 w-4 mr-2" /> Vendido
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3 text-center">
+                Marcar como "Vendido" oculta o anúncio das buscas principais, mas mantém-no no teu histórico.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* --- DADOS DO VEÍCULO --- */}
         <Card className="border-border shadow-sm bg-card overflow-hidden rounded-2xl">
           <CardHeader className="bg-muted/30 border-b border-border py-4">
