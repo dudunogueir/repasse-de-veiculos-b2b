@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
-    // ... (O teu código original mantém-se igual aqui)
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -44,12 +43,25 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
-        // Tratamento de erros omitido para brevidade, mas igual ao teu original
+        // Tratamento de erros do estado da aplicação
+        if (appError.status === 403 && appError.data?.extra_data?.reason) {
+          const reason = appError.data.extra_data.reason;
+          if (reason === 'auth_required') {
+            setAuthError({ type: 'auth_required', message: 'Authentication required' });
+          } else if (reason === 'user_not_registered') {
+            setAuthError({ type: 'user_not_registered', message: 'User not registered for this app' });
+          } else {
+            setAuthError({ type: reason, message: appError.message });
+          }
+        } else {
+          setAuthError({ type: 'unknown', message: appError.message || 'Failed to load app' });
+        }
         setIsLoadingPublicSettings(false);
         setIsLoadingAuth(false);
       }
     } catch (error) {
       console.error('Unexpected error:', error);
+      setAuthError({ type: 'unknown', message: error.message || 'An unexpected error occurred' });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
     }
@@ -66,27 +78,10 @@ export const AuthProvider = ({ children }) => {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
-    }
-  };
-
-  // NOVA FUNÇÃO: Login com E-mail e Senha
-  const loginWithEmail = async (email, password) => {
-    try {
-      setAuthError(null);
-      // Assumindo que o SDK do Base44 tem o método login. 
-      // Se a documentação deles exigir axios direto, ajustaremos!
-      const response = await base44.auth.login({ email, password });
       
-      // Se o login for bem sucedido, atualizamos o estado do utilizador
-      await checkUserAuth(); 
-      return { success: true };
-    } catch (error) {
-      console.error("Erro no login:", error);
-      // Aqui capturamos o famoso Erro 400 e transformamos numa mensagem amigável
-      return { 
-        success: false, 
-        message: "E-mail ou senha incorretos. Por favor, tenta novamente." 
-      };
+      if (error.status === 401 || error.status === 403) {
+        setAuthError({ type: 'auth_required', message: 'Authentication required' });
+      }
     }
   };
 
@@ -100,6 +95,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Esta é a função correta que a plataforma Base44 exige que usemos!
   const navigateToLogin = () => {
     base44.auth.redirectToLogin(window.location.href);
   };
@@ -114,7 +110,6 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings,
       logout,
       navigateToLogin,
-      loginWithEmail, // <-- Não esquecer de exportar a nova função aqui!
       checkAppState
     }}>
       {children}
