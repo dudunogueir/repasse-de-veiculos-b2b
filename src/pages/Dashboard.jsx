@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   const { data: messages, isLoading: loadingMessages } = useQuery({
     queryKey: ['my-messages-dashboard'],
-    queryFn: () => base44.entities.ChatMessage.filter({ recipient_id: user.id }),
+    queryFn: () => base44.entities.ChatMessage.filter({ recipient_id: user.email }),
     enabled: !!user
   });
 
