@@ -149,14 +149,25 @@ export default function AdminPage() {
                 <CardTitle className="text-lg flex items-center gap-2">
                   Todos os Veículos <span className="text-sm font-normal text-gray-400">({allVehicles?.length})</span>
                 </CardTitle>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                  <Input 
-                    placeholder="Filtrar por ID ou Marca..." 
-                    className="pl-9 h-9 text-xs"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <Input 
+                      placeholder="Filtrar por ID ou Marca..." 
+                      className="pl-9 h-9 text-xs"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => populateMutation.mutate()} 
+                    disabled={populateMutation.isPending}
+                  >
+                    {populateMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Popular Dados de Teste
+                  </Button>
                 </div>
               </div>
             </CardHeader>
