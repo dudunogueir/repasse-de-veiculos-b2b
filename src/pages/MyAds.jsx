@@ -1,21 +1,11 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import PullToRefresh from '@/components/shared/PullToRefresh';
 import { 
-  MoreVertical, Pencil, Trash2, Eye, CheckCircle, XCircle, Plus, LayoutDashboard
+  Car, Plus, Edit, Trash2, Tag, BarChart3, Loader2, Image as ImageIcon 
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,217 +17,204 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { formatCurrency, formatDate } from '../components/shared/utils';
+import { useAuth } from '@/lib/AuthContext';
+import { createPageUrl } from '@/utils';
 import { toast } from "sonner";
 
 export default function MyAdsPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // 1. Busca de Anúncios com suporte a Refetch
-  const { data: vehicles, isLoading, refetch } = useQuery({
-    queryKey: ['my-vehicles'],
+  // 1. Busca os veículos anunciados pelo utilizador logado
+  const { data: myVehicles, isLoading } = useQuery({
+    queryKey: ['my-vehicles', user?.email],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      const all = await base44.entities.Vehicle.list(); 
-      // Filtra apenas os veículos criados pelo usuário logado [cite: 43]
-      return all
-        .filter(v => v.created_by === user.email)
-        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-    }
+      if (!user?.email) return [];
+      const results = await base44.entities.Vehicle.filter({ created_by: user.email });
+      // Ordena por data de criação (mais recentes primeiro)
+      return results.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+    },
+    enabled: !!user?.email
   });
 
-  // 2. Função para o gesto Pull-to-Refresh [cite: 254]
-  const handleRefresh = async () => {
-    await refetch();
-    toast.info("Lista atualizada");
-  };
-
-  // 3. Mutação para Exclusão [cite: 54, 83]
+  // 2. Mutação rápida para Excluir
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Vehicle.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['my-vehicles']);
-      toast.success("Anúncio excluído permanentemente");
+      toast.success("Anúncio removido do seu estoque.");
     }
   });
 
-  // 4. Mutação Otimizada para Status (Vendido/Ativo) [cite: 53, 204]
-  const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Vehicle.update(id, { status }),
-    onMutate: async (updatedVehicle) => {
-      // Cancela refetches para não sobrescrever o estado otimista
-      await queryClient.cancelQueries(['my-vehicles']);
-      const previousVehicles = queryClient.getQueryData(['my-vehicles']);
+  // Cálculos do Mini-Dashboard Financeiro
+  const activeAds = myVehicles?.filter(v => v.status === 'active') || [];
+  const soldAds = myVehicles?.filter(v => v.status === 'sold') || [];
+  
+  const totalStockValue = activeAds.reduce((acc, vehicle) => acc + (vehicle.price || 0), 0);
 
-      // Atualiza o cache local instantaneamente para parecer nativo 
-      queryClient.setQueryData(['my-vehicles'], (old) =>
-        old.map((v) =>
-          v.id === updatedVehicle.id ? { ...v, status: updatedVehicle.status } : v
-        )
-      );
-
-      return { previousVehicles };
-    },
-    onError: (err, updatedVehicle, context) => {
-      // Reverte em caso de erro no servidor
-      queryClient.setQueryData(['my-vehicles'], context.previousVehicles);
-      toast.error("Erro ao atualizar status");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries(['my-vehicles']);
-    },
-    onSuccess: (data, variables) => {
-      const msg = variables.status === 'sold' ? "Veículo marcado como vendido" : "Anúncio reativado";
-      toast.success(msg);
-    }
-  });
+  const formattedStockValue = new Intl.NumberFormat('pt-BR', {
+    style: 'currency', currency: 'BRL', maximumFractionDigits: 0
+  }).format(totalStockValue);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center pb-20 gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">A carregar o seu painel de gestão...</p>
       </div>
     );
   }
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      {/* pb-20 garante que o último card não fique sob a Bottom Tab Bar [cite: 232] */}
-      <div className="max-w-6xl mx-auto pb-20 px-1">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Meus Anúncios</h1>
-            <p className="text-gray-500 mt-1">Gerencie seu estoque e acompanhe o desempenho[cite: 43].</p>
+    <div className="min-h-screen bg-background pb-32">
+      
+      {/* HEADER NATIVO COM BLUR E CALL-TO-ACTION */}
+      <div className="sticky top-0 z-50 flex items-center justify-between px-4 h-16 bg-background/90 backdrop-blur-xl border-b border-border safe-pt">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+            <Car className="h-4 w-4 text-primary-foreground" />
           </div>
-          <Link to={createPageUrl('Advertise')}>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 shadow-sm active:scale-95 transition-transform">
-              <Plus className="h-4 w-4 mr-2" /> Novo Anúncio
-            </Button>
-          </Link>
+          <h1 className="text-lg font-bold text-foreground">O Meu Estoque</h1>
+        </div>
+        <Button 
+          size="sm" 
+          className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-sm"
+          onClick={() => window.location.href = createPageUrl('Advertise')}
+        >
+          <Plus className="h-4 w-4 mr-1" /> Novo Anúncio
+        </Button>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 mt-6">
+        
+        {/* MINI-DASHBOARD FINANCEIRO B2B */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <Card className="rounded-2xl border-border bg-card shadow-sm">
+            <CardContent className="p-4 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-1">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Valor Ativo (R$)</p>
+              </div>
+              <p className="text-2xl font-extrabold text-foreground tabular-nums tracking-tight">
+                {formattedStockValue}
+              </p>
+            </CardContent>
+          </Card>
+          <div className="grid grid-rows-2 gap-4">
+            <Card className="rounded-2xl border-border bg-primary/5 shadow-sm">
+              <CardContent className="p-3 flex items-center justify-between h-full">
+                <p className="text-xs font-bold text-primary uppercase">Ativos</p>
+                <p className="text-xl font-bold text-primary tabular-nums">{activeAds.length}</p>
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl border-border bg-muted/50 shadow-sm">
+              <CardContent className="p-3 flex items-center justify-between h-full">
+                <p className="text-xs font-bold text-muted-foreground uppercase">Vendidos</p>
+                <p className="text-xl font-bold text-muted-foreground tabular-nums">{soldAds.length}</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {vehicles?.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-            <LayoutDashboard className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900">Você ainda não tem anúncios</h3>
-            <p className="text-gray-500 mb-6">Comece a vender seus veículos agora mesmo.</p>
-            <Link to={createPageUrl('Advertise')}>
-              <Button variant="outline">Criar primeiro anúncio</Button>
-            </Link>
+        {/* LISTA DE ANÚNCIOS */}
+        {myVehicles?.length === 0 ? (
+          <div className="text-center py-20 bg-card rounded-3xl border border-dashed border-border shadow-sm mt-8">
+            <Tag className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <h3 className="text-lg font-bold">Sem veículos anunciados</h3>
+            <p className="text-muted-foreground text-sm mb-6 px-10">
+              Comece a rentabilizar o seu estoque. Publique o seu primeiro veículo no repasse B2B.
+            </p>
+            <Button 
+              onClick={() => window.location.href = createPageUrl('Advertise')} 
+              className="rounded-xl h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Criar Anúncio
+            </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {vehicles.map((vehicle) => (
-              <Card key={vehicle.id} className={`overflow-hidden transition-all duration-200 ${vehicle.status === 'sold' ? 'opacity-75 bg-gray-50' : 'hover:shadow-md'}`}>
-                <div className="flex flex-col md:flex-row">
-                  
-                  {/* Espaço da Imagem */}
-                  <div className="w-full md:w-48 h-40 md:h-auto bg-gray-200 relative overflow-hidden">
-                    {vehicle.photos?.[0] ? (
-                      <img src={vehicle.photos[0]} alt={vehicle.model} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">Sem foto</div>
-                    )}
+          <div className="space-y-4">
+            {myVehicles?.map((vehicle) => {
+              const isActive = vehicle.status === 'active';
+              const mainPhoto = vehicle.photos?.[0];
+              const priceFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(vehicle.price || 0);
+
+              return (
+                <Card key={vehicle.id} className={`overflow-hidden rounded-2xl border ${isActive ? 'border-border bg-card' : 'border-border/50 bg-muted/30'} shadow-sm transition-all`}>
+                  <div className="flex flex-col sm:flex-row">
                     
-                    {/* Badge de Vendido [cite: 53, 137] */}
-                    {vehicle.status === 'sold' && (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
-                        <Badge variant="destructive" className="text-xs font-bold px-3 py-1 shadow-lg">VENDIDO</Badge>
+                    {/* Thumbnail da Imagem */}
+                    <div className="relative w-full sm:w-32 aspect-video sm:aspect-square bg-muted shrink-0">
+                      {mainPhoto ? (
+                        <img src={mainPhoto} alt={vehicle.model} className={`w-full h-full object-cover ${!isActive && 'grayscale opacity-70'}`} />
+                      ) : (
+                        <div className="flex items-center justify-center w-full h-full text-muted-foreground/30">
+                          <ImageIcon className="h-8 w-8" />
+                        </div>
+                      )}
+                      {/* Badge de Status */}
+                      <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest text-white shadow-sm ${isActive ? 'bg-green-600' : 'bg-orange-600'}`}>
+                        {isActive ? 'Ativo' : 'Vendido'}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Detalhes do Veículo [cite: 22, 110] */}
-                  <div className="flex-1 p-5 flex flex-col md:flex-row justify-between gap-4">
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-xl text-gray-900">{vehicle.make} {vehicle.model}</h3>
-                        <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider">
-                          {vehicle.manufacturing_year}/{vehicle.model_year}
-                        </Badge>
+                    {/* Informações de Gestão */}
+                    <div className="p-4 flex-1 flex flex-col">
+                      <div className="flex justify-between items-start mb-1">
+                        <div>
+                          <h3 className={`font-bold text-base leading-tight line-clamp-1 ${!isActive && 'text-muted-foreground'}`}>
+                            {vehicle.make} {vehicle.model}
+                          </h3>
+                          <p className="text-xs font-medium text-muted-foreground tabular-nums mt-0.5">
+                            {vehicle.manufacturing_year}/{vehicle.model_year} • {vehicle.mileage?.toLocaleString('pt-BR')} km
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-gray-500 text-sm">{vehicle.version} • {vehicle.color}</p>
-                      <p className="font-extrabold text-indigo-700 text-lg mt-2">
-                        {formatCurrency(vehicle.price)}
+
+                      <p className={`text-lg font-extrabold tabular-nums tracking-tight mt-2 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {priceFormatted}
                       </p>
-                      
-                      <div className="flex items-center gap-4 mt-6 text-[11px] font-medium text-gray-400 uppercase tracking-tight">
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" /> {vehicle.views || 0} visualizações [cite: 48]
-                        </span>
-                        <span>Anunciado em {formatDate(vehicle.created_date)} [cite: 110]</span>
+
+                      {/* Botões de Ação */}
+                      <div className="mt-4 flex gap-2 pt-3 border-t border-border/50">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 h-9 rounded-lg font-bold bg-background"
+                          onClick={() => window.location.href = `${createPageUrl('EditVehicle')}?id=${vehicle.id}`}
+                        >
+                          <Edit className="h-4 w-4 mr-2" /> Editar
+                        </Button>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-3xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir veículo?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação removerá o anúncio permanentemente. Se já o vendeu, considere apenas editar o status para "Vendido".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="gap-2">
+                              <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteMutation.mutate(vehicle.id)} className="bg-destructive hover:bg-destructive/90 rounded-xl">
+                                Sim, excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
-
-                    {/* Ações Rápidas [cite: 50] */}
-                    <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-3 min-w-[150px]">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100">
-                            <MoreVertical className="h-5 w-5 text-gray-500" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem asChild>
-                            <Link to={`${createPageUrl('EditVehicle')}?id=${vehicle.id}`} className="cursor-pointer">
-                              <Pencil className="mr-2 h-4 w-4 text-gray-500" /> Editar Dados [cite: 51]
-                            </Link>
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuItem 
-                            onClick={() => toggleStatusMutation.mutate({ 
-                              id: vehicle.id, 
-                              status: vehicle.status === 'active' ? 'sold' : 'active' 
-                            })}
-                            className="cursor-pointer"
-                          >
-                            {vehicle.status === 'active' ? (
-                              <><CheckCircle className="mr-2 h-4 w-4 text-green-600" /> Marcar como Vendido [cite: 53]</>
-                            ) : (
-                              <><XCircle className="mr-2 h-4 w-4 text-indigo-600" /> Reativar Anúncio</>
-                            )}
-                          </DropdownMenuItem>
-
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 cursor-pointer">
-                                <Trash2 className="mr-2 h-4 w-4" /> Excluir permanentemente [cite: 54]
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-2xl">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Deseja excluir este anúncio?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta ação é irreversível. O anúncio do {vehicle.make} {vehicle.model} será removido para sempre[cite: 54].
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => deleteMutation.mutate(vehicle.id)} 
-                                  className="bg-red-600 hover:bg-red-700 rounded-xl"
-                                >
-                                  Sim, excluir
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-
-                      <Button variant="outline" size="sm" asChild className="w-full rounded-xl border-gray-300 font-bold text-xs h-9">
-                        <Link to={`${createPageUrl('VehicleDetails')}?id=${vehicle.id}`}>
-                          Visualizar Detalhes
-                        </Link>
-                      </Button>
-                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
-    </PullToRefresh>
+    </div>
   );
 }
