@@ -39,6 +39,10 @@ const POPULAR_MAKES = [
 
 export default function AdvertisePage() {
   const queryClient = useQueryClient();
+  const urlParams = new URLSearchParams(window.location.search);
+  const vehicleId = urlParams.get('id');
+  const isEditing = !!vehicleId;
+
   const [photos, setPhotos] = useState(['', '', '']); // 3 slots de fotos para o MVP
   const [isFeatured, setIsFeatured] = useState(false);
   
