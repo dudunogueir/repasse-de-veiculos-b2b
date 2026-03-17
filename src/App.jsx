@@ -16,6 +16,7 @@ import DashboardPage from './pages/Dashboard';
 import ProposalsPage from './pages/Proposals';
 import AlertPreferencesPage from './pages/AlertPreferences';
 import PlansPage from './pages/Plans';
+import AdvertisePage from './pages/Advertise';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
