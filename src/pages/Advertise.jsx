@@ -78,7 +78,10 @@ export default function AdvertisePage() {
       mileage: '',
       state: '',
       city: '',
-      status: 'active'
+      status: 'active',
+      transmission: '',
+      phone: '',
+      description: ''
     }
   });
 
