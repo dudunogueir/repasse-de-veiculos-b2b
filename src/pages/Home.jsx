@@ -1,22 +1,32 @@
-// src/pages/Home.jsx
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, FilterX, SlidersHorizontal, Car } from 'lucide-react';
+import { 
+  Loader2, Search, FilterX, SlidersHorizontal, 
+  Car, ChevronRight, Check 
+} from 'lucide-react';
 import VehicleCard from '../components/vehicle/VehicleCard';
-import PullToRefresh from '@/components/shared/PullToRefresh'; // <-- IMPORTAÇÃO
+import PullToRefresh from '@/components/shared/PullToRefresh';
 import { STATES } from '../components/shared/utils';
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetFooter,
 } from "@/components/ui/sheet";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { toast } from "sonner";
 
 export default function HomePage() {
@@ -32,12 +42,12 @@ export default function HomePage() {
   });
 
   const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedFilters(filters), 500);
     return () => clearTimeout(timer);
   }, [filters]);
 
-  // Fetch Vehicles - Extraímos o refetch para o Pull-to-Refresh
   const { data: vehicles, isLoading, refetch: refetchVehicles } = useQuery({
     queryKey: ['vehicles', debouncedFilters],
     queryFn: async () => {
@@ -57,8 +67,6 @@ export default function HomePage() {
         if (debouncedFilters.sort === 'oldest') return new Date(a.created_date) - new Date(b.created_date);
         if (debouncedFilters.sort === 'price_asc') return a.price - b.price;
         if (debouncedFilters.sort === 'price_desc') return b.price - a.price;
-        if (debouncedFilters.sort === 'year_asc') return a.manufacturing_year - b.manufacturing_year;
-        if (debouncedFilters.sort === 'year_desc') return b.manufacturing_year - a.manufacturing_year;
         return 0;
       });
     }
@@ -75,7 +83,6 @@ export default function HomePage() {
     }
   });
 
-  // Função para o Pull-to-Refresh
   const handleRefresh = async () => {
     await Promise.all([refetchVehicles(), refetchFavorites()]);
     toast.info("Ofertas atualizadas!");
@@ -104,104 +111,150 @@ export default function HomePage() {
     setFilters({ make: '', model: '', state: 'all', minPrice: '', maxPrice: '', minYear: '', maxYear: '', sort: 'recent' });
   };
 
+  const sortOptions = [
+    { label: 'Mais Recentes', value: 'recent' },
+    { label: 'Mais Antigos', value: 'oldest' },
+    { label: 'Menor Preço', value: 'price_asc' },
+    { label: 'Maior Preço', value: 'price_desc' },
+  ];
+
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="space-y-8">
-        {/* Hero Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Encontre o veículo ideal</h1>
-              <p className="text-gray-500">Milhares de oportunidades para sua concessionária</p>
-            </div>
-            
-            <div className="flex gap-2 w-full md:w-auto">
-              <Select value={filters.sort} onValueChange={(val) => setFilters({...filters, sort: val})}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Mais Recentes</SelectItem>
-                  <SelectItem value="oldest">Mais Antigos</SelectItem>
-                  <SelectItem value="price_asc">Menor Preço</SelectItem>
-                  <SelectItem value="price_desc">Maior Preço</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="md:hidden">
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="h-[80vh] rounded-t-xl">
-                  <SheetHeader>
-                    <SheetTitle>Filtros de Busca</SheetTitle>
-                  </SheetHeader>
-                  <div className="py-6 space-y-6 overflow-y-auto h-full pb-20">
-                    <div className="space-y-4">
-                      <Input placeholder="Marca" value={filters.make} onChange={(e) => setFilters({...filters, make: e.target.value})} />
-                      <Input placeholder="Modelo" value={filters.model} onChange={(e) => setFilters({...filters, model: e.target.value})} />
-                      <Select value={filters.state} onValueChange={(val) => setFilters({...filters, state: val})}>
-                        <SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos os estados</SelectItem>
-                          {STATES.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input type="number" placeholder="Preço Mín." value={filters.minPrice} onChange={(e) => setFilters({...filters, minPrice: e.target.value})} />
-                        <Input type="number" placeholder="Preço Máx." value={filters.maxPrice} onChange={(e) => setFilters({...filters, maxPrice: e.target.value})} />
-                      </div>
-                      <Button className="w-full" onClick={() => document.querySelector('[data-radix-collection-item]').click()}>Aplicar Filtros</Button>
-                      <Button variant="ghost" className="w-full text-red-500" onClick={clearFilters}>Limpar Filtros</Button>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-
-          {/* Desktop Filters Grid */}
-          <div className="hidden md:grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <div className="col-span-1 md:col-span-2 lg:col-span-2 relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input placeholder="Buscar por Marca..." className="pl-9" value={filters.make} onChange={(e) => setFilters({...filters, make: e.target.value})} />
-            </div>
-            <div className="col-span-1 md:col-span-2 lg:col-span-2">
-               <Input placeholder="Modelo..." value={filters.model} onChange={(e) => setFilters({...filters, model: e.target.value})} />
-            </div>
-            <div>
-               <Select value={filters.state} onValueChange={(val) => setFilters({...filters, state: val})}>
-                <SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {STATES.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-               <Button variant="outline" onClick={clearFilters} className="w-full text-gray-500 hover:text-gray-900">
-                  <FilterX className="h-4 w-4 mr-2" /> Limpar
-               </Button>
-            </div>
-          </div>
+      <div className="space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Buscar Veículos</h1>
+          <p className="text-sm text-slate-500">Explore as melhores oportunidades de repasse.</p>
         </div>
 
-        {/* Results List */}
+        {/* Mobile Action Bar */}
+        <div className="flex gap-2 md:hidden overflow-x-auto pb-2 scrollbar-hide">
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button variant="outline" size="sm" className="rounded-full gap-2 border-slate-200">
+                <SlidersHorizontal className="h-4 w-4" /> Filtros
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="px-4 pb-8">
+              <DrawerHeader>
+                <DrawerTitle>Filtros Avançados</DrawerTitle>
+              </DrawerHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-3">
+                   <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Preço Mín.</label>
+                      <Input type="number" placeholder="R$ 0" value={filters.minPrice} onChange={(e) => setFilters({...filters, minPrice: e.target.value})} />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase">Preço Máx.</label>
+                      <Input type="number" placeholder="R$ 1M" value={filters.maxPrice} onChange={(e) => setFilters({...filters, maxPrice: e.target.value})} />
+                   </div>
+                </div>
+                <div className="space-y-1.5">
+                   <label className="text-xs font-bold text-slate-500 uppercase">Estado (UF)</label>
+                   <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1">
+                      {STATES.map(uf => (
+                        <Button 
+                          key={uf} 
+                          variant={filters.state === uf ? "default" : "outline"} 
+                          size="sm"
+                          onClick={() => setFilters({...filters, state: uf})}
+                        >
+                          {uf}
+                        </Button>
+                      ))}
+                   </div>
+                </div>
+              </div>
+              <DrawerFooter className="flex-row gap-2 px-0">
+                <Button className="flex-1" onClick={() => document.querySelector('[data-drawer-close]').click()}>Ver Resultados</Button>
+                <Button variant="ghost" onClick={clearFilters}><FilterX className="h-4 w-4" /></Button>
+              </DrawerFooter>
+              <DrawerClose id="data-drawer-close" />
+            </DrawerContent>
+          </Drawer>
+
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button variant="outline" size="sm" className="rounded-full gap-2 border-slate-200">
+                Ordenar: {sortOptions.find(o => o.value === filters.sort)?.label}
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <div className="p-4 space-y-1">
+                {sortOptions.map(opt => (
+                  <Button 
+                    key={opt.value} 
+                    variant="ghost" 
+                    className="w-full justify-between font-medium" 
+                    onClick={() => { setFilters({...filters, sort: opt.value}); document.querySelector('[data-drawer-close-sort]').click(); }}
+                  >
+                    {opt.label}
+                    {filters.sort === opt.value && <Check className="h-4 w-4 text-indigo-600" />}
+                  </Button>
+                ))}
+              </div>
+              <DrawerClose id="data-drawer-close-sort" />
+            </DrawerContent>
+          </Drawer>
+        </div>
+
+        {/* Desktop Search Bar */}
+        <div className="hidden md:grid grid-cols-12 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div className="col-span-4 relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Input placeholder="Marca ou modelo..." className="pl-9" value={filters.make} onChange={(e) => setFilters({...filters, make: e.target.value})} />
+          </div>
+          <div className="col-span-2">
+            <Input placeholder="Preço Máx." type="number" value={filters.maxPrice} onChange={(e) => setFilters({...filters, maxPrice: e.target.value})} />
+          </div>
+          <div className="col-span-2">
+            <select 
+              className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+              value={filters.state}
+              onChange={(e) => setFilters({...filters, state: e.target.value})}
+            >
+              <option value="all">Todos Estados</option>
+              {STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+            </select>
+          </div>
+          <div className="col-span-2">
+            <select 
+              className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+              value={filters.sort}
+              onChange={(e) => setFilters({...filters, sort: e.target.value})}
+            >
+              {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <Button variant="ghost" className="col-span-2 text-slate-500" onClick={clearFilters}>
+            <FilterX className="h-4 w-4 mr-2" /> Limpar
+          </Button>
+        </div>
+
+        {/* Results */}
         {isLoading ? (
-          <div className="flex justify-center py-20"><Loader2 className="h-10 w-10 animate-spin text-indigo-600" /></div>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+            <p className="text-sm text-slate-500 font-medium">Buscando ofertas...</p>
+          </div>
         ) : (
-          <div>
-            <p className="text-sm text-gray-500 mb-4">{vehicles?.length || 0} veículos encontrados</p>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                {vehicles?.length || 0} Resultados encontrados
+              </span>
+            </div>
+            
             {vehicles?.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-                <Car className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">Nenhum veículo encontrado</h3>
-                <Button variant="link" onClick={clearFilters} className="mt-2 text-indigo-600">Limpar filtros</Button>
+              <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">
+                <Car className="h-12 w-12 mx-auto text-slate-200 mb-4" />
+                <h3 className="text-lg font-bold text-slate-900">Sem resultados</h3>
+                <p className="text-slate-500 text-sm mb-6 px-10">Tente ajustar seus filtros para encontrar o que procura.</p>
+                <Button variant="outline" onClick={clearFilters} className="rounded-full">Limpar tudo</Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {vehicles?.map((vehicle) => (
                   <VehicleCard 
                     key={vehicle.id} 
