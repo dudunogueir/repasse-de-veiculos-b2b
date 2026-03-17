@@ -5,7 +5,8 @@ import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { 
   Car, PlusCircle, Heart, MessageSquare, 
-  Bell, LogOut, User, LayoutDashboard 
+  Bell, LogOut, User, LayoutDashboard,
+  FileText, BellRing, Crown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -96,6 +97,21 @@ export default function Layout({ children }) {
                   <DropdownMenuItem asChild>
                     <Link to={createPageUrl('Profile')} className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" /> Perfil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to={createPageUrl('Proposals')} className="cursor-pointer">
+                      <FileText className="mr-2 h-4 w-4" /> Minhas Propostas
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to={createPageUrl('AlertPreferences')} className="cursor-pointer">
+                      <BellRing className="mr-2 h-4 w-4" /> Alertas
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to={createPageUrl('Plans')} className="cursor-pointer">
+                      <Crown className="mr-2 h-4 w-4" /> Planos
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={logout} className="text-destructive cursor-pointer">

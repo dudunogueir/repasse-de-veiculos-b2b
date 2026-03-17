@@ -13,6 +13,9 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { motion, AnimatePresence } from 'framer-motion'; // Adicionado para animações nativas
 import NotificationsPage from './pages/Notifications';
 import DashboardPage from './pages/Dashboard';
+import ProposalsPage from './pages/Proposals';
+import AlertPreferencesPage from './pages/AlertPreferences';
+import PlansPage from './pages/Plans';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -86,6 +89,30 @@ const AuthenticatedApp = () => {
           element={
             <LayoutWrapper currentPageName="Dashboard">
               <PageTransition><DashboardPage /></PageTransition>
+            </LayoutWrapper>
+          } 
+        />
+        <Route 
+          path="/Proposals" 
+          element={
+            <LayoutWrapper currentPageName="Proposals">
+              <PageTransition><ProposalsPage /></PageTransition>
+            </LayoutWrapper>
+          } 
+        />
+        <Route 
+          path="/AlertPreferences" 
+          element={
+            <LayoutWrapper currentPageName="AlertPreferences">
+              <PageTransition><AlertPreferencesPage /></PageTransition>
+            </LayoutWrapper>
+          } 
+        />
+        <Route 
+          path="/Plans" 
+          element={
+            <LayoutWrapper currentPageName="Plans">
+              <PageTransition><PlansPage /></PageTransition>
             </LayoutWrapper>
           } 
         />

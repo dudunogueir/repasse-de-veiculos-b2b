@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Car, Loader2, MapPin, ChevronRight, 
-  Check, ImagePlus, CheckCircle2, DollarSign
+  Check, ImagePlus, CheckCircle2, DollarSign, Star
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { STATES } from '../components/shared/utils';
 import {
   Drawer,
@@ -31,6 +32,24 @@ const POPULAR_MAKES = [
 export default function AdvertisePage() {
   const queryClient = useQueryClient();
   const [photos, setPhotos] = useState(['', '', '']); // 3 slots de fotos para o MVP
+  const [isFeatured, setIsFeatured] = useState(false);
+  
+  const { data: subscription } = useQuery({
+    queryKey: ['my-subscription-advertise'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      const subs = await base44.entities.Subscription.filter({ user_id: user.email, status: 'active' });
+      return subs.length > 0 ? subs[0] : { plan: 'free', vehicles_limit: 3, highlight_slots: 0 };
+    }
+  });
+
+  const { data: myActiveVehicles } = useQuery({
+    queryKey: ['my-active-vehicles-count'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Vehicle.filter({ created_by: user.email, status: 'active' });
+    }
+  });
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -67,10 +86,20 @@ export default function AdvertisePage() {
         status: 'active',
         views: 0,
         created_by: user.email,
-        created_date: new Date().toISOString()
+        created_date: new Date().toISOString(),
+        is_featured: isFeatured
       };
       
-      return base44.entities.Vehicle.create(payload);
+      const vehicle = await base44.entities.Vehicle.create(payload);
+      
+      // Trigger alerts
+      try {
+        await base44.functions.invoke('matchVehicleAlerts', { vehicle });
+      } catch (e) {
+        console.error("Error triggering alerts", e);
+      }
+      
+      return vehicle;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['my-vehicles']);

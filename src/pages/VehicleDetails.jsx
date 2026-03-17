@@ -17,6 +17,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import SellerBadge from '../components/vehicle/SellerBadge';
 import FipeComparison from '../components/vehicle/FipeComparison';
 
@@ -26,6 +38,9 @@ export default function VehicleDetailsPage() {
   const [activePhoto, setActivePhoto] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [scale, setScale] = useState(1);
+  const { user } = useAuth();
+  const [proposalPrice, setProposalPrice] = useState('');
+  const [proposalMessage, setProposalMessage] = useState('');
 
   useEffect(() => {
     if (!isFullscreen) setScale(1);
@@ -62,6 +77,47 @@ export default function VehicleDetailsPage() {
     queryKey: ['vehicle', vehicleId],
     queryFn: () => base44.entities.Vehicle.read(vehicleId),
     enabled: !!vehicleId
+  });
+
+  useEffect(() => {
+    if (vehicle && !proposalPrice) {
+      setProposalPrice(vehicle.price.toString());
+    }
+  }, [vehicle]);
+
+  const proposalMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("auth_required");
+      
+      await base44.entities.Proposal.create({
+        vehicle_id: vehicle.id,
+        buyer_id: user.email,
+        seller_id: vehicle.created_by,
+        proposed_price: parseFloat(proposalPrice),
+        message: proposalMessage,
+        status: 'pending'
+      });
+
+      // Notificar vendedor
+      const sellers = await base44.entities.User.filter({ email: vehicle.created_by });
+      if (sellers.length > 0) {
+        await base44.entities.Notification.create({
+          recipient_id: sellers[0].id,
+          type: 'system',
+          message: `💰 Nova proposta recebida para ${vehicle.make} ${vehicle.model}: R$ ${parseFloat(proposalPrice).toLocaleString('pt-BR')}`,
+          link: `/Proposals`,
+          read: false
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success("Proposta enviada com sucesso!");
+      document.getElementById('close-proposal-dialog')?.click();
+    },
+    onError: (e) => {
+      if (e.message === "auth_required") base44.auth.redirectToLogin();
+      else toast.error("Erro ao enviar proposta.");
+    }
   });
 
   const { data: favorites, refetch: refetchFavorites } = useQuery({
@@ -426,14 +482,61 @@ export default function VehicleDetailsPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-xl border-t border-border z-40 safe-pb shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto flex gap-3">
           <Button 
             onClick={handleContactSeller}
-            className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-bold text-lg shadow-lg shadow-primary/25 transition-all active:scale-[0.98]"
+            className="flex-1 h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-bold text-lg shadow-lg shadow-primary/25 transition-all active:scale-[0.98]"
           >
             <MessageCircle className="h-6 w-6 mr-2" />
-            Negociar Agora
+            Chat
           </Button>
+          
+          {user?.email !== vehicle.created_by && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="secondary" className="flex-1 h-14 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-[0.98]">
+                  Fazer Proposta
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Fazer Proposta</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase">Valor Proposto (R$)</label>
+                    <Input 
+                      type="number" 
+                      value={proposalPrice} 
+                      onChange={e => setProposalPrice(e.target.value)} 
+                      className="h-12 text-lg font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase">Mensagem (Opcional)</label>
+                    <Input 
+                      value={proposalMessage} 
+                      onChange={e => setProposalMessage(e.target.value)} 
+                      placeholder="Ex: Pagamento à vista"
+                      className="h-12"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose id="close-proposal-dialog" asChild>
+                    <Button variant="ghost">Cancelar</Button>
+                  </DialogClose>
+                  <Button 
+                    onClick={() => proposalMutation.mutate()} 
+                    disabled={proposalMutation.isPending}
+                  >
+                    {proposalMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Enviar Proposta
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
     </div>
