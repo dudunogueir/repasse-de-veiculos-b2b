@@ -454,9 +454,9 @@ export default function AdvertisePage() {
             </Button>
             <Button type="submit" disabled={createMutation.isPending} className="flex-1 h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-bold text-lg shadow-lg shadow-primary/20">
               {createMutation.isPending ? (
-                <><Loader2 className="h-6 w-6 animate-spin mr-2" /> Publicando...</>
+                <><Loader2 className="h-6 w-6 animate-spin mr-2" /> {isEditing ? 'A guardar...' : 'Publicando...'}</>
               ) : (
-                <><CheckCircle2 className="h-6 w-6 mr-2" /> Publicar Anúncio</>
+                <><CheckCircle2 className="h-6 w-6 mr-2" /> {isEditing ? 'Guardar Alterações' : 'Publicar Anúncio'}</>
               )}
             </Button>
           </div>
