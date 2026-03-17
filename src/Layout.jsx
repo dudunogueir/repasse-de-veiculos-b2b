@@ -17,28 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import NotificationsSheet from '@/components/NotificationsSheet';
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
-  const [notifications, setNotifications] = useState([]);
   const location = useLocation();
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (user?.id) {
-        try {
-          const notifs = await base44.entities.Notification.filter({ 
-            recipient_id: user.id, 
-            read: false 
-          });
-          setNotifications(notifs);
-        } catch (e) {
-          console.error("Error fetching notifications:", e);
-        }
-      }
-    };
-    fetchNotifications();
-  }, [user, location.pathname]);
 
   const navItems = [
     { name: 'Buscar', icon: Car, path: 'Home' },
@@ -67,14 +50,7 @@ export default function Layout({ children }) {
 
           <div className="flex items-center gap-2">
             {user && (
-              <Button variant="ghost" size="icon" className="relative text-muted-foreground" asChild>
-                <Link to={createPageUrl('Notifications')}>
-                  <Bell className="h-5 w-5" />
-                  {notifications.length > 0 && (
-                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive border-2 border-background" />
-                  )}
-                </Link>
-              </Button>
+              <NotificationsSheet />
             )}
 
             {user ? (
