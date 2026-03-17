@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { 
   Loader2, Search, FilterX, SlidersHorizontal, 
-  Car, Check, MapPin, ArrowUpDown
+  Car, Check, ArrowUpDown, Store
 } from 'lucide-react';
 import VehicleCard from '../components/vehicle/VehicleCard';
 import PullToRefresh from '@/components/shared/PullToRefresh';
@@ -21,26 +21,31 @@ import {
   DrawerFooter,
 } from "@/components/ui/drawer";
 import { toast } from "sonner";
+import { createPageUrl } from '@/utils';
 
 export default function HomePage() {
-  // 1. Estado Global Persistente (Resolve Stack Preservation)
   const { homeFilters, setHomeFilters, resetHomeFilters } = useNavigationStore();
-  
-  // 2. Estado local para o Debounce da busca
   const [debouncedFilters, setDebouncedFilters] = useState(homeFilters);
+  
+  // Deteta se o utilizador chegou aqui vindo do botão "Ver estoque do vendedor"
+  const urlParams = new URLSearchParams(window.location.search);
+  const sellerQuery = urlParams.get('seller');
   
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedFilters(homeFilters), 400);
     return () => clearTimeout(timer);
   }, [homeFilters]);
 
-  // 3. Busca de veículos ativos
   const { data: vehicles, isLoading, refetch: refetchVehicles } = useQuery({
-    queryKey: ['vehicles', debouncedFilters],
+    queryKey: ['vehicles', debouncedFilters, sellerQuery],
     queryFn: async () => {
       let results = await base44.entities.Vehicle.filter({ status: 'active' }, { created_date: -1 }, 100);
       
       return results.filter(v => {
+        // Regra Especial: Filtra pelo vendedor se o parâmetro existir na URL
+        if (sellerQuery && v.created_by !== sellerQuery) return false;
+        
+        // Filtros Normais
         if (debouncedFilters.make && !v.make.toLowerCase().includes(debouncedFilters.make.toLowerCase())) return false;
         if (debouncedFilters.model && !v.model.toLowerCase().includes(debouncedFilters.model.toLowerCase())) return false;
         if (debouncedFilters.state !== 'all' && v.state !== debouncedFilters.state) return false;
@@ -52,7 +57,7 @@ export default function HomePage() {
         if (debouncedFilters.sort === 'price_asc') return a.price - b.price;
         if (debouncedFilters.sort === 'price_desc') return b.price - a.price;
         return 0;
-      }); 
+      });
     }
   });
 
@@ -100,12 +105,33 @@ export default function HomePage() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Buscar Veículos</h1>
-          <p className="text-sm text-muted-foreground">Explore as melhores oportunidades de repasse.</p>
-        </div>
+        
+        {/* Aviso de Filtro de Vendedor (Aparece apenas quando clicam no botão da página de detalhes) */}
+        {sellerQuery ? (
+          <div className="flex items-center justify-between bg-primary text-primary-foreground p-4 rounded-2xl shadow-md">
+            <div className="flex items-center gap-3">
+              <Store className="h-6 w-6" />
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Estoque Exclusivo</p>
+                <p className="font-semibold text-sm">{sellerQuery}</p>
+              </div>
+            </div>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="rounded-full font-bold"
+              onClick={() => window.location.href = createPageUrl('Home')}
+            >
+              Ver Todos
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Buscar Veículos</h1>
+            <p className="text-sm text-muted-foreground">Explore as melhores oportunidades de repasse.</p>
+          </div>
+        )}
 
-        {/* Mobile Filters via Drawer (Bottom Sheets) */}
         <div className="flex gap-2 md:hidden overflow-x-auto pb-2 scrollbar-hide">
           <Drawer>
             <DrawerTrigger asChild>
@@ -135,12 +161,7 @@ export default function HomePage() {
                    <label className="text-xs font-bold text-muted-foreground uppercase">Estado (UF)</label>
                    <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1">
                       {STATES.map(uf => (
-                        <Button 
-                          key={uf} 
-                          variant={homeFilters.state === uf ? "default" : "outline"} 
-                          size="sm"
-                          onClick={() => setHomeFilters({ state: uf })}
-                        >
+                        <Button key={uf} variant={homeFilters.state === uf ? "default" : "outline"} size="sm" onClick={() => setHomeFilters({ state: uf })}>
                           {uf}
                         </Button>
                       ))}
@@ -166,12 +187,7 @@ export default function HomePage() {
             <DrawerContent>
               <div className="p-4 space-y-2">
                 {sortOptions.map(opt => (
-                  <Button 
-                    key={opt.value} 
-                    variant="ghost" 
-                    className="w-full justify-between h-12 rounded-xl" 
-                    onClick={() => { setHomeFilters({ sort: opt.value }); }}
-                  >
+                  <Button key={opt.value} variant="ghost" className="w-full justify-between h-12 rounded-xl" onClick={() => { setHomeFilters({ sort: opt.value }); }}>
                     {opt.label}
                     {homeFilters.sort === opt.value && <Check className="h-4 w-4 text-primary" />}
                   </Button>
@@ -186,33 +202,19 @@ export default function HomePage() {
           </Drawer>
         </div>
 
-        {/* Desktop Search/Filters */}
         <div className="hidden md:grid grid-cols-12 gap-3 bg-card p-4 rounded-xl border border-border shadow-sm">
           <div className="col-span-4 relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Marca ou modelo..." 
-              className="pl-9 h-10" 
-              value={homeFilters.make} 
-              onChange={(e) => setHomeFilters({ make: e.target.value })} 
-            />
+            <Input placeholder="Marca ou modelo..." className="pl-9 h-10" value={homeFilters.make} onChange={(e) => setHomeFilters({ make: e.target.value })} />
           </div>
           <div className="col-span-3">
-            <select 
-              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary"
-              value={homeFilters.state}
-              onChange={(e) => setHomeFilters({ state: e.target.value })}
-            >
+            <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary" value={homeFilters.state} onChange={(e) => setHomeFilters({ state: e.target.value })}>
               <option value="all">Todos Estados</option>
               {STATES.map(uf => <option key={uf} value={uf}>{uf}</option>)}
             </select>
           </div>
           <div className="col-span-3">
-            <select 
-              className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary"
-              value={homeFilters.sort}
-              onChange={(e) => setHomeFilters({ sort: e.target.value })}
-            >
+            <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary" value={homeFilters.sort} onChange={(e) => setHomeFilters({ sort: e.target.value })}>
               {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
@@ -221,7 +223,6 @@ export default function HomePage() {
           </Button>
         </div>
 
-        {/* List Results */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -239,19 +240,16 @@ export default function HomePage() {
               <div className="text-center py-20 bg-card rounded-2xl border border-dashed border-border">
                 <Car className="h-12 w-12 mx-auto text-muted/30 mb-4" />
                 <h3 className="text-lg font-bold">Nenhum veículo encontrado</h3>
-                <p className="text-muted-foreground text-sm mb-6 px-10">Tente ajustar seus filtros para encontrar o que procura.</p>
-                <Button variant="outline" onClick={resetHomeFilters} className="rounded-full">Limpar tudo</Button>
+                <p className="text-muted-foreground text-sm mb-6 px-10">
+                  {sellerQuery ? "Este vendedor não possui outros veículos ativos no momento." : "Tente ajustar seus filtros para encontrar o que procura."}
+                </p>
+                {!sellerQuery && <Button variant="outline" onClick={resetHomeFilters} className="rounded-full">Limpar tudo</Button>}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {vehicles?.map((vehicle) => (
-                  <VehicleCard 
-                    key={vehicle.id} 
-                    vehicle={vehicle} 
-                    isFavorite={favorites?.some(f => f.vehicle_id === vehicle.id)}
-                    onToggleFavorite={handleToggleFavorite}
-                  />
-                ))} 
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} isFavorite={favorites?.some(f => f.vehicle_id === vehicle.id)} onToggleFavorite={handleToggleFavorite} />
+                ))}
               </div>
             )}
           </div>
