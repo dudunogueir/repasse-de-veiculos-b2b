@@ -411,6 +411,16 @@ export default function AdvertisePage() {
                 <Input {...register("city")} placeholder="Cidade (Opcional)" className="rounded-xl h-12 bg-background border-input" />
               </div>
             </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase ml-1">Telefone de Contato</label>
+              <Input {...register("phone")} placeholder="Ex: 11999999999" className="rounded-xl h-12 bg-background border-input" />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase ml-1">Descrição</label>
+              <textarea {...register("description")} placeholder="Detalhes adicionais do veículo..." className="w-full rounded-xl bg-background border border-input p-3 min-h-[100px] text-sm" />
+            </div>
           </CardContent>
         </Card>
 
