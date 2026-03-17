@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -39,8 +40,10 @@ const POPULAR_MAKES = [
 
 export default function AdvertisePage() {
   const queryClient = useQueryClient();
-  const urlParams = new URLSearchParams(window.location.search);
-  const vehicleId = urlParams.get('id');
+  const { id: paramId } = useParams();
+  const location = useLocation();
+  const urlParams = new URLSearchParams(location.search);
+  const vehicleId = paramId || urlParams.get('id');
   const isEditing = !!vehicleId;
 
   const [photos, setPhotos] = useState(['', '', '']); // 3 slots de fotos para o MVP
