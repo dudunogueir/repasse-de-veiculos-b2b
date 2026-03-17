@@ -324,6 +324,15 @@ export default function AdvertisePage() {
               <Input {...register("version")} placeholder="Ex: 2.0 Flex 16V Aut." className="rounded-xl h-12 bg-background border-input" />
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase ml-1">Câmbio</label>
+              <select {...register("transmission")} className="w-full h-12 rounded-xl bg-background border border-input px-3 text-sm">
+                <option value="">Selecionar Câmbio</option>
+                <option value="Automático">Automático</option>
+                <option value="Manual">Manual</option>
+              </select>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground uppercase ml-1">Ano Fab.</label>
