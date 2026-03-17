@@ -177,14 +177,23 @@ export default function AdvertisePage() {
     createMutation.mutate(data);
   };
 
-  const isLimitReached = myActiveVehicles && subscription && myActiveVehicles.length >= subscription.vehicles_limit;
+  const isLimitReached = !isEditing && myActiveVehicles && subscription && myActiveVehicles.length >= subscription.vehicles_limit;
   const canFeature = subscription && subscription.highlight_slots > 0;
+
+  if (isEditing && isLoadingVehicle) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">A carregar dados do veículo...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto pb-32 px-1">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground tracking-tight">Criar Anúncio</h1>
-        <p className="text-muted-foreground mt-2">Publique seu veículo no repasse B2B.</p>
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">{isEditing ? 'Editar Anúncio' : 'Cadastrar Veículo'}</h1>
+        <p className="text-muted-foreground mt-2">{isEditing ? 'Atualize as informações do seu veículo.' : 'Publique seu veículo no repasse B2B.'}</p>
       </div>
 
       <Dialog open={isLimitReached}>
