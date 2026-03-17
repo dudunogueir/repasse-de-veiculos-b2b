@@ -1,3 +1,4 @@
+// src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useForm, Controller } from 'react-hook-form';
@@ -5,13 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, CheckCircle, User, Building2 } from 'lucide-react';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Loader2, CheckCircle, User, Building2, Trash2 } from 'lucide-react';
 import { STATES } from '../components/shared/utils';
 import { toast } from "sonner";
+import { useAuth } from '@/lib/AuthContext'; // Precisamos do contexto para fazer logout após excluir
 
 export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const { logout } = useAuth(); // Função de logout do teu contexto
   
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm();
 
@@ -19,7 +35,6 @@ export default function ProfilePage() {
     const loadUser = async () => {
       try {
         const user = await base44.auth.me();
-        // If user has custom fields in User entity, updateMe merges them into the user object returned by me()
         reset({
             company_name: user.company_name || '',
             contact_name: user.contact_name || user.full_name || '',
@@ -41,7 +56,6 @@ export default function ProfilePage() {
   const onSubmit = async (data) => {
     setIsSaving(true);
     try {
-      // Remove email from update payload as it's read-only for updateMe usually or handled separately
       const { email, ...updateData } = data;
       await base44.auth.updateMe(updateData);
       toast.success("Perfil atualizado com sucesso!");
@@ -50,6 +64,23 @@ export default function ProfilePage() {
       toast.error("Erro ao atualizar perfil.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // NOVA FUNÇÃO: Excluir Conta
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      // Chamada à API da Base44 para apagar a conta
+      await base44.auth.deleteAccount();
+      toast.success("Conta excluída com sucesso.");
+      
+      // Fazer logout imediato após a exclusão
+      logout();
+    } catch (error) {
+      console.error("Erro ao excluir conta:", error);
+      toast.error("Não foi possível excluir a conta. Tente novamente mais tarde.");
+      setIsDeleting(false); // Só volta a falso se der erro, se der sucesso a página muda
     }
   };
 
@@ -62,7 +93,7 @@ export default function ProfilePage() {
         <p className="text-gray-500 mt-2">Mantenha seus dados atualizados para transmitir confiança aos compradores.</p>
       </div>
 
-      <Card>
+      <Card className="mb-8">
         <CardHeader>
             <div className="flex items-center gap-3 mb-2">
                 <div className="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
@@ -136,6 +167,53 @@ export default function ProfilePage() {
                     </Button>
                 </div>
             </form>
+        </CardContent>
+      </Card>
+
+      {/* ZONA DE PERIGO: Exclusão de Conta */}
+      <Card className="border-red-100 bg-red-50/30">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                <Trash2 className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-red-600 text-lg">Zona de Perigo</CardTitle>
+              <CardDescription className="text-red-500/80">Ações irreversíveis para a sua conta.</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <p className="text-sm text-gray-600">
+              Ao excluir a sua conta, perderá o acesso à plataforma e todos os seus anúncios serão permanentemente removidos.
+            </p>
+            
+            {/* Componente de Confirmação (AlertDialog) */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="whitespace-nowrap">
+                  Excluir Minha Conta
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isto irá excluir permanentemente a sua conta
+                    e remover todos os seus dados e anúncios dos nossos servidores.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700">
+                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Sim, excluir conta
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </CardContent>
       </Card>
     </div>
