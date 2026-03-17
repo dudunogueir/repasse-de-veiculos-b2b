@@ -39,7 +39,10 @@ export default function HomePage() {
   const { data: vehicles, isLoading, refetch: refetchVehicles } = useQuery({
     queryKey: ['vehicles', debouncedFilters, sellerQuery],
     queryFn: async () => {
-      let results = await base44.entities.Vehicle.filter({ status: 'active' }, { created_date: -1 }, 1000);
+      // Busca todos os veículos e filtra em memória para garantir que anúncios do próprio usuário 
+      // (mesmo os que foram salvos sem o campo status explícito) apareçam na busca.
+      let allVehicles = await base44.entities.Vehicle.list('-created_date', 1000);
+      let results = allVehicles.filter(v => v.status === 'active' || !v.status);
       
       return results.filter(v => {
         // Regra Especial: Filtra pelo vendedor se o parâmetro existir na URL
