@@ -1,10 +1,8 @@
-// src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useForm, Controller } from 'react-hook-form';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
   AlertDialog,
@@ -17,19 +15,29 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CheckCircle, User, Building2, Trash2 } from 'lucide-react';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter,
+} from "@/components/ui/drawer";
+import { Loader2, CheckCircle, Building2, Trash2, MapPin, ChevronRight, Check } from 'lucide-react';
 import { STATES } from '../components/shared/utils';
 import { toast } from "sonner";
-import { useAuth } from '@/lib/AuthContext'; // Precisamos do contexto para fazer logout após excluir
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  const { logout } = useAuth(); // Função de logout do teu contexto
-  
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm();
+  const { logout } = useAuth();
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm();
+
+  const selectedState = watch("state");
 
   useEffect(() => {
     const loadUser = async () => {
@@ -42,7 +50,7 @@ export default function ProfilePage() {
             phone: user.phone || '',
             state: user.state || '',
             city: user.city || '',
-            email: user.email // read only
+            email: user.email 
         });
       } catch (e) {
         console.error(e);
@@ -60,162 +68,142 @@ export default function ProfilePage() {
       await base44.auth.updateMe(updateData);
       toast.success("Perfil atualizado com sucesso!");
     } catch (error) {
-      console.error("Profile update failed", error);
       toast.error("Erro ao atualizar perfil.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // NOVA FUNÇÃO: Excluir Conta
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
-      // Chamada à API da Base44 para apagar a conta
       await base44.auth.deleteAccount();
-      toast.success("Conta excluída com sucesso.");
-      
-      // Fazer logout imediato após a exclusão
+      toast.success("Conta excluída.");
       logout();
     } catch (error) {
-      console.error("Erro ao excluir conta:", error);
-      toast.error("Não foi possível excluir a conta. Tente novamente mais tarde.");
-      setIsDeleting(false); // Só volta a falso se der erro, se der sucesso a página muda
+      toast.error("Erro ao excluir conta.");
+      setIsDeleting(false);
     }
   };
 
   if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin h-8 w-8 text-indigo-600" /></div>;
 
   return (
-    <div className="max-w-3xl mx-auto pb-20">
-       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Perfil da Concessionária</h1>
-        <p className="text-gray-500 mt-2">Mantenha seus dados atualizados para transmitir confiança aos compradores.</p>
+    <div className="max-w-3xl mx-auto pb-24 px-1">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Perfil</h1>
+        <p className="text-slate-500 mt-2">Dados da sua concessionária para negociações B2B.</p>
       </div>
 
-      <Card className="mb-8">
-        <CardHeader>
-            <div className="flex items-center gap-3 mb-2">
-                <div className="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
-                    <Building2 className="h-6 w-6" />
-                </div>
-                <div>
-                    <CardTitle>Dados Cadastrais</CardTitle>
-                    <CardDescription>Informações visíveis nos seus anúncios</CardDescription>
-                </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <Card className="border-none shadow-sm overflow-hidden">
+          <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Dados Cadastrais</CardTitle>
+                <CardDescription>Informações visíveis nos seus anúncios</CardDescription>
+              </div>
             </div>
-        </CardHeader>
-        <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Nome da Concessionária</label>
-                        <Input {...register("company_name", { required: "Nome obrigatório" })} placeholder="Ex: Auto Motors" />
-                        {errors.company_name && <span className="text-xs text-red-500">{errors.company_name.message}</span>}
-                    </div>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase ml-1">Nome da Empresa</label>
+                <Input {...register("company_name", { required: "Obrigatório" })} className="rounded-xl h-11 bg-slate-50 border-none" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase ml-1">CNPJ</label>
+                <Input {...register("cnpj", { required: "Obrigatório" })} className="rounded-xl h-11 bg-slate-50 border-none" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase ml-1">Responsável</label>
+                <Input {...register("contact_name")} className="rounded-xl h-11 bg-slate-50 border-none" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase ml-1">WhatsApp</label>
+                <Input {...register("phone")} className="rounded-xl h-11 bg-slate-50 border-none" />
+              </div>
+            </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">CNPJ</label>
-                        <Input {...register("cnpj", { required: "CNPJ obrigatório" })} placeholder="00.000.000/0000-00" />
-                        {errors.cnpj && <span className="text-xs text-red-500">{errors.cnpj.message}</span>}
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Nome do Contato</label>
-                        <Input {...register("contact_name", { required: "Nome de contato obrigatório" })} placeholder="Ex: João Silva" />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Telefone / WhatsApp</label>
-                        <Input {...register("phone", { required: "Telefone obrigatório" })} placeholder="(00) 00000-0000" />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Estado</label>
-                         <Controller
-                          name="state"
-                          control={control}
-                          rules={{ required: "Estado obrigatório" }}
-                          render={({ field }) => (
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {STATES.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Cidade</label>
-                        <Input {...register("city", { required: "Cidade obrigatória" })} placeholder="Cidade" />
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-400">E-mail (Login)</label>
-                        <Input {...register("email")} disabled className="bg-gray-50 text-gray-500" />
-                    </div>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                    <Button type="submit" disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700 min-w-[150px]">
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                        Salvar Alterações
+            {/* SELETOR DE ESTADO ESTILO NATIVO (Drawer no Mobile) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase ml-1">Localização</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Drawer>
+                  <DrawerTrigger asChild>
+                    <Button variant="outline" className="w-full h-11 justify-between rounded-xl bg-slate-50 border-none text-slate-700 font-normal">
+                      <span className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-slate-400" />
+                        {selectedState ? `Estado: ${selectedState}` : "Selecionar Estado"}
+                      </span>
+                      <ChevronRight className="h-4 w-4 text-slate-300" />
                     </Button>
-                </div>
-            </form>
-        </CardContent>
-      </Card>
+                  </DrawerTrigger>
+                  <DrawerContent className="max-h-[80vh]">
+                    <DrawerHeader>
+                      <DrawerTitle>Selecione seu Estado</DrawerTitle>
+                    </DrawerHeader>
+                    <div className="p-4 grid grid-cols-4 gap-2 overflow-y-auto">
+                      {STATES.map(uf => (
+                        <Button 
+                          key={uf} 
+                          variant={selectedState === uf ? "default" : "outline"} 
+                          onClick={() => { setValue("state", uf); document.querySelector('[data-drawer-close-state]').click(); }}
+                          className="rounded-xl h-12 font-bold"
+                        >
+                          {uf}
+                          {selectedState === uf && <Check className="ml-2 h-3 w-3" />}
+                        </Button>
+                      ))}
+                    </div>
+                    <DrawerFooter>
+                      <DrawerClose id="data-drawer-close-state" />
+                    </DrawerFooter>
+                  </DrawerContent>
+                </Drawer>
+                <Input {...register("city")} placeholder="Cidade" className="rounded-xl h-11 bg-slate-50 border-none" />
+              </div>
+            </div>
 
-      {/* ZONA DE PERIGO: Exclusão de Conta */}
-      <Card className="border-red-100 bg-red-50/30">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
-                <Trash2 className="h-5 w-5" />
+            <div className="space-y-1.5 opacity-60">
+              <label className="text-xs font-bold text-slate-500 uppercase ml-1">E-mail de Acesso</label>
+              <Input {...register("email")} disabled className="rounded-xl h-11 bg-slate-100 border-none" />
             </div>
-            <div>
-              <CardTitle className="text-red-600 text-lg">Zona de Perigo</CardTitle>
-              <CardDescription className="text-red-500/80">Ações irreversíveis para a sua conta.</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <p className="text-sm text-gray-600">
-              Ao excluir a sua conta, perderá o acesso à plataforma e todos os seus anúncios serão permanentemente removidos.
-            </p>
-            
-            {/* Componente de Confirmação (AlertDialog) */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="whitespace-nowrap">
-                  Excluir Minha Conta
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. Isto irá excluir permanentemente a sua conta
-                    e remover todos os seus dados e anúncios dos nossos servidores.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700">
-                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Sim, excluir conta
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          <Button type="submit" disabled={isSaving} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-md shadow-indigo-100 font-bold">
+            {isSaving ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <CheckCircle className="h-5 w-5 mr-2" />}
+            Salvar Alterações
+          </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" className="text-slate-400 hover:text-red-500 text-xs">
+                Encerrar conta e excluir dados
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-3xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir sua conta?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação é irreversível e todos os seus anúncios serão removidos permanentemente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2">
+                <AlertDialogCancel className="rounded-xl">Voltar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 rounded-xl">
+                  {isDeleting ? "Excluindo..." : "Sim, excluir conta"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </form>
     </div>
   );
 }
