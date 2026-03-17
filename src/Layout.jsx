@@ -1,7 +1,9 @@
+// src/Layout.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
+import { useAuth } from '@/lib/AuthContext'; // IMPORTAMOS O CONTEXTO AQUI
 import { 
   Car, 
   PlusCircle, 
@@ -27,32 +29,35 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Layout({ children }) {
-  const [user, setUser] = useState(null);
+  // 1. Usamos o Contexto Global em vez de estado local para o User
+  const { user, logout, navigateToLogin } = useAuth();
+  
   const [notifications, setNotifications] = useState([]);
   const location = useLocation();
 
+  // 2. Buscamos as notificações APENAS se houver um user logado
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-        
-        // Fetch unread notifications
-        const notifs = await base44.entities.Notification.filter({ 
-          recipient_id: currentUser.id, 
-          read: false 
-        });
-        setNotifications(notifs);
-      } catch (e) {
-        console.error("Error fetching user:", e);
-        // Not logged in
+    const fetchNotifications = async () => {
+      if (user && user.id) {
+        try {
+          const notifs = await base44.entities.Notification.filter({ 
+            recipient_id: user.id, 
+            read: false 
+          });
+          setNotifications(notifs);
+        } catch (e) {
+          console.error("Error fetching notifications:", e);
+        }
+      } else {
+        setNotifications([]); // Limpa se não houver user
       }
     };
-    fetchUser();
-  }, [location.pathname]);
+    fetchNotifications();
+  }, [user, location.pathname]); // Atualiza sempre que o user ou a rota mudar
 
-  const handleLogout = async () => {
-    await base44.auth.logout();
+  // 3. Usamos a função de logout do contexto
+  const handleLogout = () => {
+    logout();
   };
 
   const navItems = [
@@ -65,7 +70,6 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-slate-900 notranslate" translate="no">
-      {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -99,33 +103,36 @@ export default function Layout({ children }) {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-4">
-              {/* Notifications */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative text-gray-500 hover:text-indigo-600">
-                    <Bell className="h-5 w-5" />
-                    {notifications.length > 0 && (
-                      <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+              
+              {/* Notificações (Só mostrar se estiver logado) */}
+              {user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="relative text-gray-500 hover:text-indigo-600">
+                      <Bell className="h-5 w-5" />
+                      {notifications.length > 0 && (
+                        <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">Nenhuma nova notificação</div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <DropdownMenuItem key={notif.id} className="flex flex-col items-start p-3 cursor-pointer">
+                          <span className="font-medium text-sm">{notif.message}</span>
+                          <span className="text-xs text-gray-400 mt-1">{new Date(notif.created_date).toLocaleDateString()}</span>
+                        </DropdownMenuItem>
+                      ))
                     )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel>Notificações</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-gray-500">Nenhuma nova notificação</div>
-                  ) : (
-                    notifications.map((notif) => (
-                      <DropdownMenuItem key={notif.id} className="flex flex-col items-start p-3 cursor-pointer">
-                        <span className="font-medium text-sm">{notif.message}</span>
-                        <span className="text-xs text-gray-400 mt-1">{new Date(notif.created_date).toLocaleDateString()}</span>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
-              {/* User Menu */}
+              {/* User Menu / Botão de Entrar */}
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -154,19 +161,20 @@ export default function Layout({ children }) {
                         </Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" /> Sair
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={() => base44.auth.redirectToLogin()} className="bg-indigo-950 hover:bg-indigo-900 text-white">
+                <Button onClick={navigateToLogin} className="bg-indigo-950 hover:bg-indigo-900 text-white">
                   Entrar
                 </Button>
               )}
 
               {/* Mobile Menu */}
               <div className="md:hidden">
+                {/* ... (O menu mobile fica igual, só ajustando o onClick do Sair) */}
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -185,10 +193,14 @@ export default function Layout({ children }) {
                           {item.name}
                         </Link>
                       ))}
-                      {user && (
+                      {user ? (
                         <Button onClick={handleLogout} variant="ghost" className="justify-start px-4 text-red-600 hover:bg-red-50 hover:text-red-700">
                           <LogOut className="h-5 w-5 mr-3" />
                           Sair
+                        </Button>
+                      ) : (
+                         <Button onClick={navigateToLogin} className="bg-indigo-950 text-white">
+                          Entrar
                         </Button>
                       )}
                     </div>
