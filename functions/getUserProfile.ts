@@ -10,10 +10,16 @@ Deno.serve(async (req) => {
         
         if (users.length > 0) {
             const u = users[0];
+            
+            // Get subscription
+            const subs = await base44.asServiceRole.entities.Subscription.filter({ user_id: email, status: 'active' });
+            const plan = subs.length > 0 ? subs[0].plan : 'free';
+            
             return Response.json({ 
                 company_name: u.company_name, 
                 cnpj_verified: u.cnpj_verified,
-                verified_at: u.verified_at
+                verified_at: u.verified_at,
+                plan: plan
             });
         }
         
