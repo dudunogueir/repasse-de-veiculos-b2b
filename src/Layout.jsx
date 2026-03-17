@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { 
   Car, PlusCircle, Heart, MessageSquare, 
   Bell, LogOut, User, LayoutDashboard,
-  FileText, BellRing, Crown
+  FileText, BellRing, Crown, ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +48,15 @@ export default function Layout({ children }) {
             <span className="text-lg font-bold tracking-tight hidden sm:block">Repasse B2B</span>
           </Link>
 
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6 ml-8 flex-1">
+            <Link to={createPageUrl('Home')} className={`text-sm font-medium transition-colors ${isActive('Home') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Buscar Veículos</Link>
+            <Link to={createPageUrl('MyAds')} className={`text-sm font-medium transition-colors ${isActive('MyAds') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Meus Anúncios</Link>
+            <Link to={createPageUrl('Advertise')} className={`text-sm font-medium transition-colors ${isActive('Advertise') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Cadastrar Veículo</Link>
+            <Link to={createPageUrl('Favorites')} className={`text-sm font-medium transition-colors ${isActive('Favorites') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Favoritos</Link>
+            <Link to={createPageUrl('Chat')} className={`text-sm font-medium transition-colors ${isActive('Chat') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>Mensagens</Link>
+          </div>
+
           <div className="flex items-center gap-2">
             {user && (
               <NotificationsSheet />
@@ -65,6 +74,16 @@ export default function Layout({ children }) {
                 <DropdownMenuContent align="end" className="w-56 rounded-xl">
                   <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">{user.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {(user.role === 'admin' || user.role === 'Administrador') && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to={createPageUrl('Admin')} className="cursor-pointer">
+                          <ShieldCheck className="mr-2 h-4 w-4" /> Painel Admin
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to={createPageUrl('Dashboard')} className="cursor-pointer">
                       <LayoutDashboard className="mr-2 h-4 w-4" /> Meu Dashboard

@@ -39,7 +39,7 @@ export default function HomePage() {
   const { data: vehicles, isLoading, refetch: refetchVehicles } = useQuery({
     queryKey: ['vehicles', debouncedFilters, sellerQuery],
     queryFn: async () => {
-      let results = await base44.entities.Vehicle.filter({ status: 'active' }, { created_date: -1 }, 100);
+      let results = await base44.entities.Vehicle.filter({ status: 'active' }, { created_date: -1 }, 1000);
       
       return results.filter(v => {
         // Regra Especial: Filtra pelo vendedor se o parâmetro existir na URL
@@ -54,22 +54,22 @@ export default function HomePage() {
           if (!matchMake && !matchModel && !matchVersion) return false;
         }
         if (debouncedFilters.make !== 'all' && debouncedFilters.make && v.make !== debouncedFilters.make) return false;
-        if (debouncedFilters.state !== 'all' && v.state !== debouncedFilters.state) return false;
+        if (debouncedFilters.state !== 'all' && debouncedFilters.state && v.state !== debouncedFilters.state) return false;
         if (debouncedFilters.transmission !== 'all' && debouncedFilters.transmission && v.transmission !== debouncedFilters.transmission) return false;
-        if (debouncedFilters.minPrice && v.price < parseInt(debouncedFilters.minPrice)) return false;
-        if (debouncedFilters.maxPrice && v.price > parseInt(debouncedFilters.maxPrice)) return false;
-        if (debouncedFilters.minYear && v.model_year < parseInt(debouncedFilters.minYear)) return false;
-        if (debouncedFilters.maxYear && v.model_year > parseInt(debouncedFilters.maxYear)) return false;
-        if (debouncedFilters.maxKm && v.km > parseInt(debouncedFilters.maxKm)) return false;
+        if (debouncedFilters.minPrice && (v.price || 0) < parseInt(debouncedFilters.minPrice)) return false;
+        if (debouncedFilters.maxPrice && (v.price || 0) > parseInt(debouncedFilters.maxPrice)) return false;
+        if (debouncedFilters.minYear && (v.model_year || 0) < parseInt(debouncedFilters.minYear)) return false;
+        if (debouncedFilters.maxYear && (v.model_year || 0) > parseInt(debouncedFilters.maxYear)) return false;
+        if (debouncedFilters.maxKm && (v.km || 0) > parseInt(debouncedFilters.maxKm)) return false;
         return true;
       }).sort((a, b) => {
         // Featured first
         if (a.is_featured && !b.is_featured) return -1;
         if (!a.is_featured && b.is_featured) return 1;
 
-        if (debouncedFilters.sort === 'recent') return new Date(b.created_date) - new Date(a.created_date);
-        if (debouncedFilters.sort === 'price_asc') return a.price - b.price;
-        if (debouncedFilters.sort === 'price_desc') return b.price - a.price;
+        if (debouncedFilters.sort === 'recent') return new Date(b.created_date || 0) - new Date(a.created_date || 0);
+        if (debouncedFilters.sort === 'price_asc') return (a.price || 0) - (b.price || 0);
+        if (debouncedFilters.sort === 'price_desc') return (b.price || 0) - (a.price || 0);
         if (debouncedFilters.sort === 'km_asc') return (a.km || 0) - (b.km || 0);
         return 0;
       });
