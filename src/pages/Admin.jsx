@@ -44,6 +44,27 @@ export default function AdminPage() {
     enabled: isAdmin
   });
 
+  const { data: subscriptions } = useQuery({
+    queryKey: ['admin-subscriptions'],
+    queryFn: () => base44.entities.Subscription.list(),
+    enabled: isAdmin
+  });
+
+  const updateSubMutation = useMutation({
+    mutationFn: async ({ id, plan }) => {
+      let limits = { vehicles_limit: 3, highlight_slots: 0 };
+      if (plan === 'starter') limits = { vehicles_limit: 10, highlight_slots: 2 };
+      if (plan === 'pro') limits = { vehicles_limit: 30, highlight_slots: 10 };
+      if (plan === 'enterprise') limits = { vehicles_limit: 9999, highlight_slots: 9999 };
+      
+      await base44.entities.Subscription.update(id, { plan, ...limits });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-subscriptions']);
+      toast.success("Plano atualizado!");
+    }
+  });
+
   const verifyMutation = useMutation({
     mutationFn: async (id) => {
       await base44.entities.User.update(id, { cnpj_verified: true, verified_at: new Date().toISOString() });
@@ -138,6 +159,9 @@ export default function AdminPage() {
           </TabsTrigger>
           <TabsTrigger value="verify" className="rounded-lg gap-2">
             <ShieldCheck className="h-4 w-4" /> Verificar CNPJ
+          </TabsTrigger>
+          <TabsTrigger value="subs" className="rounded-lg gap-2">
+            <Users className="h-4 w-4" /> Assinaturas
           </TabsTrigger>
         </TabsList>
 
@@ -248,6 +272,52 @@ export default function AdminPage() {
                         ) : (
                           <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => verifyMutation.mutate(u.id)}>Verificar</Button>
                         )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* --- ABA DE ASSINATURAS --- */}
+        <TabsContent value="subs">
+          <Card className="border-none shadow-sm bg-white overflow-hidden">
+            <CardHeader className="border-b bg-gray-50/50">
+              <CardTitle className="text-lg">Gerenciar Assinaturas</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Plano Atual</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Alterar Plano</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscriptions?.map((sub) => (
+                    <TableRow key={sub.id}>
+                      <TableCell className="font-medium text-sm">{sub.user_id}</TableCell>
+                      <TableCell className="text-sm uppercase font-bold">{sub.plan}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 text-xs rounded-full font-bold ${sub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {sub.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="space-x-2">
+                        <select 
+                          className="h-8 rounded border px-2 text-xs"
+                          value={sub.plan}
+                          onChange={(e) => updateSubMutation.mutate({ id: sub.id, plan: e.target.value })}
+                        >
+                          <option value="free">Free</option>
+                          <option value="starter">Starter</option>
+                          <option value="pro">Pro</option>
+                          <option value="enterprise">Enterprise</option>
+                        </select>
                       </TableCell>
                     </TableRow>
                   ))}

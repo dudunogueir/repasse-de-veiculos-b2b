@@ -64,7 +64,7 @@ export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
   return (
     <Card 
       onClick={handleCardClick}
-      className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col"
+      className={`group overflow-hidden rounded-2xl border bg-card shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col ${vehicle.is_featured ? 'border-yellow-400 ring-1 ring-yellow-400/50' : 'border-border'}`}
     >
       {/* 1. ÁREA DA FOTO E FAVORITO */}
       <div className="relative aspect-[4/3] bg-muted overflow-hidden flex items-center justify-center">
@@ -83,8 +83,15 @@ export default function VehicleCard({ vehicle, isFavorite, onToggleFavorite }) {
         )}
         
         {/* Tag Institucional (Reforça B2B) */}
-        <div className="absolute top-3 left-3 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md shadow-sm">
-          Repasse
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
+          <div className="bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md shadow-sm w-fit">
+            Repasse
+          </div>
+          {vehicle.is_featured && (
+            <div className="bg-yellow-500 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md shadow-sm w-fit flex items-center gap-1">
+              ⭐ Destaque
+            </div>
+          )}
         </div>
 
         {/* Ações Rápidas (Favorito e Partilha) */}

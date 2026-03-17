@@ -119,6 +119,9 @@ export default function AdvertisePage() {
     createMutation.mutate(data);
   };
 
+  const isLimitReached = myActiveVehicles && subscription && myActiveVehicles.length >= subscription.vehicles_limit;
+  const canFeature = subscription && subscription.highlight_slots > 0;
+
   return (
     <div className="max-w-3xl mx-auto pb-32 px-1">
       <div className="mb-8">
@@ -126,7 +129,19 @@ export default function AdvertisePage() {
         <p className="text-muted-foreground mt-2">Publique seu veículo no repasse B2B.</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {isLimitReached ? (
+        <Card className="border-red-200 bg-red-50 mb-6">
+          <CardContent className="p-6 text-center">
+            <h3 className="text-lg font-bold text-red-800 mb-2">Limite de Anúncios Atingido</h3>
+            <p className="text-red-600 mb-4">Seu plano atual ({subscription?.plan}) permite até {subscription?.vehicles_limit} anúncios simultâneos.</p>
+            <Button onClick={() => window.location.href = createPageUrl('Plans')} className="bg-red-600 hover:bg-red-700">
+              Fazer Upgrade de Plano
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <form onSubmit={handleSubmit(onSubmit)} className={`space-y-6 ${isLimitReached ? 'opacity-50 pointer-events-none' : ''}`}>
         
         {/* --- DADOS DO VEÍCULO --- */}
         <Card className="border-border shadow-sm bg-card overflow-hidden rounded-2xl">
@@ -293,6 +308,31 @@ export default function AdvertisePage() {
             ))}
           </CardContent>
         </Card>
+
+        {/* --- DESTAQUE --- */}
+        {canFeature && (
+          <Card className="border-border shadow-sm bg-card overflow-hidden rounded-2xl border-yellow-400/50 bg-yellow-50/30">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                  <Star className="h-5 w-5 text-yellow-600 fill-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">Destacar Anúncio</h3>
+                  <p className="text-xs text-muted-foreground">Você tem {subscription.highlight_slots} destaques disponíveis.</p>
+                </div>
+              </div>
+              <Button 
+                type="button"
+                variant={isFeatured ? "default" : "outline"}
+                className={isFeatured ? "bg-yellow-500 hover:bg-yellow-600 text-white" : ""}
+                onClick={() => setIsFeatured(!isFeatured)}
+              >
+                {isFeatured ? 'Destacado ⭐' : 'Destacar'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* BOTÃO FIXO NO RODAPÉ (Nativo UX) */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border z-40 safe-pb">

@@ -28,6 +28,16 @@ export default function SellerBadge({ email, showName = false }) {
           Pendente
         </span>
       )}
+      {seller.plan === 'pro' && (
+        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded-full">
+          ⭐ Pro
+        </span>
+      )}
+      {seller.plan === 'enterprise' && (
+        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded-full">
+          🏆 Enterprise
+        </span>
+      )}
     </div>
   );
 }

@@ -63,6 +63,10 @@ export default function HomePage() {
         if (debouncedFilters.maxKm && v.km > parseInt(debouncedFilters.maxKm)) return false;
         return true;
       }).sort((a, b) => {
+        // Featured first
+        if (a.is_featured && !b.is_featured) return -1;
+        if (!a.is_featured && b.is_featured) return 1;
+
         if (debouncedFilters.sort === 'recent') return new Date(b.created_date) - new Date(a.created_date);
         if (debouncedFilters.sort === 'price_asc') return a.price - b.price;
         if (debouncedFilters.sort === 'price_desc') return b.price - a.price;
