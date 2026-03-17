@@ -1,105 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* --- VARIÁVEIS DE SISTEMA (DARK/LIGHT MODE) --- */
+/* --- PALETA CORPORATE TRUST (B2B) --- */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Fundo Slate-50 ultraclaro para destacar os cartões brancos */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%; /* Slate 900 */
+    
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Primary: Deep Navy Blue (Azul Institucional/Confiança) */
+    --primary: 224 64% 33%; 
     --primary-foreground: 210 40% 98%;
+    
     --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary-foreground: 222 47% 11%;
+    
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
+    
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent-foreground: 222 47% 11%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+    
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 224 64% 33%;
+    
     --radius: 0.75rem;
   }
 
-  /* Sincronização automática com o sistema do iPhone/Android */
+  /* Dark Mode: Elegante e focado em tons escuros de Slate */
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 222.2 84% 4.9%;
+      --background: 222 47% 11%; /* Fundo escuro real */
       --foreground: 210 40% 98%;
-      --card: 222.2 84% 4.9%;
+      
+      --card: 215 28% 17%; /* Cartões levemente mais claros que o fundo */
       --card-foreground: 210 40% 98%;
-      --popover: 222.2 84% 4.9%;
+      
+      --popover: 215 28% 17%;
       --popover-foreground: 210 40% 98%;
-      --primary: 217.2 91.2% 59.8%;
-      --primary-foreground: 222.2 84% 4.9%;
-      --secondary: 217.2 32.6% 17.5%;
+      
+      /* Primary no escuro precisa ser mais vibrante para contraste (Blue 500) */
+      --primary: 217 91% 60%;
+      --primary-foreground: 222 47% 11%;
+      
+      --secondary: 215 28% 17%;
       --secondary-foreground: 210 40% 98%;
-      --muted: 217.2 32.6% 17.5%;
+      
+      --muted: 215 28% 17%;
       --muted-foreground: 215 20.2% 65.1%;
-      --accent: 217.2 32.6% 17.5%;
+      
+      --accent: 215 28% 17%;
       --accent-foreground: 210 40% 98%;
+      
       --destructive: 0 62.8% 30.6%;
       --destructive-foreground: 210 40% 98%;
-      --border: 217.2 32.6% 17.5%;
-      --input: 217.2 32.6% 17.5%;
-      --ring: 224.3 76.3% 48%;
+      
+      --border: 215 28% 17%;
+      --input: 215 28% 17%;
+      --ring: 217 91% 60%;
     }
   }
 
-  /* Suporte para alternância manual via classe .dark */
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 215 28% 17%;
     --card-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --border: 217.2 32.6% 17.5%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    --border: 215 28% 17%;
   }
 }
 
-/* --- CONFIGURAÇÕES DE COMPORTAMENTO NATIVO --- */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   
   body {
+    /* antialiased melhora a renderização da fonte Inter nas telas do iPhone */
     @apply bg-background text-foreground antialiased;
-    /* Bloqueia gestos de navegador para sensação de App [cite: 85] */
     overscroll-behavior-y: none;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Garante que campos de texto continuem interagíveis */
   input, textarea, select, [contenteditable="true"] {
     -webkit-user-select: auto;
     user-select: auto;
   }
 }
 
-/* --- UTILITÁRIOS DE SAFE AREA (iPhones Modernos) [cite: 81] --- */
-.safe-pt {
-  padding-top: env(safe-area-inset-top, 0px);
-}
+/* --- UTILITÁRIOS --- */
+.safe-pt { padding-top: env(safe-area-inset-top, 0px); }
+.safe-pb { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-.safe-pb {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/* Utilitário para esconder barras de scroll em menus horizontais */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
