@@ -73,6 +73,39 @@ export default function AdminPage() {
     }
   });
 
+  const populateMutation = useMutation({
+    mutationFn: async () => {
+      const testData = [
+        { make: "Toyota", model: "Corolla", version: "XEi", manufacturing_year: 2021, model_year: 2022, km: 35000, transmission: "Automático", color: "Branco", state: "RS", city: "Porto Alegre", price: 128000, status: "active", views: 42, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Toyota+Corolla"] },
+        { make: "Honda", model: "Civic", version: "EXL", manufacturing_year: 2020, model_year: 2021, km: 48000, transmission: "Automático", color: "Prata", state: "SP", city: "São Paulo", price: 119000, status: "active", views: 31, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Honda+Civic"] },
+        { make: "Jeep", model: "Compass", version: "Limited", manufacturing_year: 2022, model_year: 2022, km: 22000, transmission: "Automático", color: "Preto", state: "PR", city: "Curitiba", price: 175000, status: "active", views: 67, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Jeep+Compass"] },
+        { make: "Volkswagen", model: "T-Cross", version: "Highline", manufacturing_year: 2021, model_year: 2022, km: 30000, transmission: "Automático", color: "Vermelho", state: "MG", city: "Belo Horizonte", price: 118000, status: "active", views: 28, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Volkswagen+T-Cross"] },
+        { make: "Hyundai", model: "HB20", version: "Comfort Plus", manufacturing_year: 2022, model_year: 2023, km: 15000, transmission: "Manual", color: "Azul", state: "SC", city: "Florianópolis", price: 72000, status: "active", views: 19, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Hyundai+HB20"] },
+        { make: "Ford", model: "Ranger", version: "XLS", manufacturing_year: 2021, model_year: 2022, km: 55000, transmission: "Automático", color: "Branco", state: "GO", city: "Goiânia", price: 198000, status: "active", views: 54, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Ford+Ranger"] },
+        { make: "Chevrolet", model: "Onix Plus", version: "Premier", manufacturing_year: 2022, model_year: 2023, km: 18000, transmission: "Automático", color: "Cinza", state: "BA", city: "Salvador", price: 89000, status: "active", views: 23, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Chevrolet+Onix+Plus"] },
+        { make: "Nissan", model: "Kicks", version: "SV", manufacturing_year: 2021, model_year: 2021, km: 42000, transmission: "Automático", color: "Prata", state: "RJ", city: "Rio de Janeiro", price: 102000, status: "active", views: 38, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Nissan+Kicks"] },
+        { make: "Toyota", model: "Hilux", version: "SR", manufacturing_year: 2020, model_year: 2021, km: 68000, transmission: "Automático", color: "Branco", state: "MT", city: "Cuiabá", price: 219000, status: "active", views: 71, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Toyota+Hilux"] },
+        { make: "Renault", model: "Kwid", version: "Intense", manufacturing_year: 2022, model_year: 2023, km: 12000, transmission: "Manual", color: "Laranja", state: "CE", city: "Fortaleza", price: 58000, status: "active", views: 14, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Renault+Kwid"] },
+        { make: "BMW", model: "320i", version: "Sport", manufacturing_year: 2021, model_year: 2022, km: 28000, transmission: "Automático", color: "Preto", state: "SP", city: "São Paulo", price: 289000, status: "active", views: 88, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+BMW+320i"] },
+        { make: "Mercedes-Benz", model: "GLA 200", version: "", manufacturing_year: 2022, model_year: 2022, km: 19000, transmission: "Automático", color: "Branco", state: "SP", city: "Campinas", price: 265000, status: "active", views: 76, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Mercedes-Benz+GLA+200"] },
+        { make: "Volkswagen", model: "Virtus", version: "GTS", manufacturing_year: 2022, model_year: 2023, km: 11000, transmission: "Automático", color: "Cinza", state: "RS", city: "Porto Alegre", price: 108000, status: "active", views: 22, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Volkswagen+Virtus"] },
+        { make: "Fiat", model: "Pulse", version: "Impetus", manufacturing_year: 2022, model_year: 2023, km: 20000, transmission: "Automático", color: "Azul", state: "PR", city: "Londrina", price: 115000, status: "active", views: 35, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Fiat+Pulse"] },
+        { make: "Hyundai", model: "Creta", version: "Ultimate", manufacturing_year: 2021, model_year: 2022, km: 33000, transmission: "Automático", color: "Prata", state: "PE", city: "Recife", price: 138000, status: "active", views: 47, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Hyundai+Creta"] },
+        { make: "Chevrolet", model: "Tracker", version: "Premier", manufacturing_year: 2022, model_year: 2022, km: 16000, transmission: "Automático", color: "Vermelho", state: "MG", city: "Uberlândia", price: 132000, status: "active", views: 29, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Chevrolet+Tracker"] },
+        { make: "Honda", model: "HR-V", version: "EXL", manufacturing_year: 2020, model_year: 2021, km: 51000, transmission: "Automático", color: "Branco", state: "RJ", city: "Niterói", price: 121000, status: "active", views: 41, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Honda+HR-V"] },
+        { make: "Jeep", model: "Renegade", version: "Longitude", manufacturing_year: 2021, model_year: 2022, km: 38000, transmission: "Automático", color: "Verde", state: "SC", city: "Joinville", price: 109000, status: "active", views: 18, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Jeep+Renegade"] },
+        { make: "Toyota", model: "Yaris", version: "XLS", manufacturing_year: 2022, model_year: 2023, km: 14000, transmission: "Automático", color: "Prata", state: "DF", city: "Brasília", price: 88000, status: "sold", views: 93, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Toyota+Yaris"] },
+        { make: "Fiat", model: "Toro", version: "Freedom", manufacturing_year: 2021, model_year: 2022, km: 44000, transmission: "Automático", color: "Branco", state: "SP", city: "Ribeirão Preto", price: 148000, status: "active", views: 56, phone: "51981337696", photos: ["https://placehold.co/800x600?text=Foto+Fiat+Toro"] }
+      ];
+      await base44.entities.Vehicle.bulkCreate(testData);
+    },
+    onSuccess: () => {
+      toast.success("20 veículos de teste inseridos com sucesso!");
+      queryClient.invalidateQueries(['admin-vehicles']);
+      window.location.href = createPageUrl('Home');
+    }
+  });
+
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
